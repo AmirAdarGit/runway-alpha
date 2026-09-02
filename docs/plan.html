@@ -1,0 +1,366 @@
+<title>Runway Alpha</title>
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wght@500;600;700&family=IBM+Plex+Mono:wght@400;500&family=Source+Serif+4:opsz,wght@8..60,400;8..60,600&display=swap">
+<style>
+:root{
+  --ground:#F2F5F8; --surface:#FFFFFF; --surface-2:#E9EEF4;
+  --ink:#111C28; --ink-2:#3B4C5E; --muted:#68798C;
+  --line:#D3DCE6; --line-strong:#AEBCCB;
+  --accent:#B26A10; --accent-soft:#F3E4CE; --accent-ink:#8A4F06;
+  --cool:#1F6474; --cool-soft:#DCEBEE;
+  --good:#2C6E52; --warn:#9C6B0E; --crit:#993434;
+  --shadow:0 1px 2px rgba(17,28,40,.06), 0 8px 24px -16px rgba(17,28,40,.28);
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    --ground:#0E151C; --surface:#151E27; --surface-2:#1D2932;
+    --ink:#E7EDF3; --ink-2:#B9C6D3; --muted:#8194A6;
+    --line:#28353F; --line-strong:#3C4C59;
+    --accent:#E3A34A; --accent-soft:#3A2C15; --accent-ink:#F0BE78;
+    --cool:#66B7C6; --cool-soft:#152D33;
+    --good:#61B58C; --warn:#D8A64A; --crit:#D97575;
+    --shadow:0 1px 2px rgba(0,0,0,.4), 0 10px 28px -18px rgba(0,0,0,.8);
+  }
+}
+:root[data-theme="dark"]{
+  --ground:#0E151C; --surface:#151E27; --surface-2:#1D2932;
+  --ink:#E7EDF3; --ink-2:#B9C6D3; --muted:#8194A6;
+  --line:#28353F; --line-strong:#3C4C59;
+  --accent:#E3A34A; --accent-soft:#3A2C15; --accent-ink:#F0BE78;
+  --cool:#66B7C6; --cool-soft:#152D33;
+  --good:#61B58C; --warn:#D8A64A; --crit:#D97575;
+  --shadow:0 1px 2px rgba(0,0,0,.4), 0 10px 28px -18px rgba(0,0,0,.8);
+}
+*{box-sizing:border-box}
+body{
+  margin:0; background:var(--ground); color:var(--ink);
+  font-family:"Source Serif 4", Georgia, serif; font-size:17px; line-height:1.62;
+  -webkit-font-smoothing:antialiased;
+}
+.wrap{max-width:1080px; margin:0 auto; padding:0 28px 96px}
+h1,h2,h3,h4,.ui{font-family:"Archivo", "Helvetica Neue", Arial, sans-serif}
+code,.mono,.num{font-family:"IBM Plex Mono", ui-monospace, Menlo, monospace}
+.num{font-variant-numeric:tabular-nums}
+
+/* header */
+header.top{
+  border-bottom:1px solid var(--line); background:var(--surface);
+  padding:38px 28px 30px; margin-bottom:44px;
+}
+.top-inner{max-width:1080px; margin:0 auto; display:flex; flex-wrap:wrap; gap:28px; align-items:flex-end; justify-content:space-between}
+.eyebrow{font-family:"IBM Plex Mono",monospace; font-size:11.5px; letter-spacing:.14em; text-transform:uppercase; color:var(--accent-ink)}
+h1{font-size:clamp(30px,4.4vw,44px); line-height:1.06; margin:.32em 0 .28em; letter-spacing:-.018em; text-wrap:balance; font-weight:700}
+.dek{font-size:18px; color:var(--ink-2); max-width:62ch; margin:0}
+.stamp{font-family:"IBM Plex Mono",monospace; font-size:12px; color:var(--muted); line-height:1.9; text-align:right}
+.stamp b{color:var(--ink-2); font-weight:500}
+
+/* sections */
+section{margin:0 0 60px; scroll-margin-top:20px}
+.sec-head{display:flex; gap:14px; align-items:baseline; border-bottom:1px solid var(--line-strong); padding-bottom:8px; margin-bottom:22px}
+.sec-num{font-family:"IBM Plex Mono",monospace; font-size:12px; color:var(--accent); letter-spacing:.08em}
+h2{font-size:23px; margin:0; letter-spacing:-.012em; font-weight:600}
+h3{font-size:16px; margin:26px 0 8px; letter-spacing:.005em; font-weight:600}
+p{margin:0 0 14px; max-width:70ch}
+ul{margin:0 0 14px; padding-left:20px; max-width:70ch}
+li{margin-bottom:6px}
+strong{font-weight:600}
+a{color:var(--cool)}
+.lead{font-size:18px; color:var(--ink-2)}
+
+/* generic surfaces */
+.panel{background:var(--surface); border:1px solid var(--line); border-radius:4px; padding:20px 22px}
+.grid2{display:grid; grid-template-columns:repeat(auto-fit,minmax(300px,1fr)); gap:16px}
+.grid3{display:grid; grid-template-columns:repeat(auto-fit,minmax(212px,1fr)); gap:14px}
+
+/* tables */
+.tablewrap{overflow-x:auto; border:1px solid var(--line); border-radius:4px; background:var(--surface)}
+table{border-collapse:collapse; width:100%; font-family:"Archivo",sans-serif; font-size:14px}
+th{
+  text-align:left; font-weight:600; font-size:11.5px; letter-spacing:.1em; text-transform:uppercase;
+  color:var(--muted); padding:11px 14px; border-bottom:1px solid var(--line-strong); white-space:nowrap;
+  font-family:"IBM Plex Mono",monospace;
+}
+td{padding:11px 14px; border-bottom:1px solid var(--line); vertical-align:top; color:var(--ink-2)}
+tbody tr:last-child td{border-bottom:none}
+td.k{color:var(--ink); font-weight:600; white-space:nowrap}
+td .mono{font-size:12.5px; color:var(--ink)}
+.tag{display:inline-block; font-family:"IBM Plex Mono",monospace; font-size:11px; padding:2px 7px; border-radius:3px; letter-spacing:.03em; white-space:nowrap}
+.tag.free{background:var(--cool-soft); color:var(--cool)}
+.tag.key{background:var(--accent-soft); color:var(--accent-ink)}
+.tag.batch{background:var(--surface-2); color:var(--muted)}
+
+/* weight bars */
+.bar{height:6px; background:var(--surface-2); border-radius:99px; overflow:hidden; min-width:96px; margin-top:7px}
+.bar i{display:block; height:100%; background:var(--accent); border-radius:99px}
+.wt{font-family:"IBM Plex Mono",monospace; font-size:13px; color:var(--ink); font-variant-numeric:tabular-nums}
+
+/* formula */
+.formula{
+  background:var(--surface); border:1px solid var(--line); border-left:3px solid var(--accent);
+  border-radius:4px; padding:16px 18px; overflow-x:auto;
+  font-family:"IBM Plex Mono",monospace; font-size:13.5px; line-height:1.85; color:var(--ink);
+}
+.formula .c{color:var(--muted)}
+
+/* callouts */
+.note{border-left:2px solid var(--line-strong); padding:2px 0 2px 16px; color:var(--muted); font-size:15.5px; max-width:68ch}
+.flag{display:flex; gap:12px; align-items:flex-start; padding:13px 15px; border:1px solid var(--line); border-radius:4px; background:var(--surface); font-size:15px; color:var(--ink-2)}
+.flag .dot{width:7px; height:7px; border-radius:99px; margin-top:8px; flex:none}
+.dot.a{background:var(--crit)} .dot.b{background:var(--warn)} .dot.c{background:var(--good)}
+
+/* phases */
+ol.phases{list-style:none; padding:0; margin:0; display:grid; gap:0; max-width:none}
+ol.phases li{
+  display:grid; grid-template-columns:64px 1fr; gap:18px; padding:16px 0;
+  border-top:1px solid var(--line); margin:0;
+}
+ol.phases li:last-child{border-bottom:1px solid var(--line)}
+.hrs{font-family:"IBM Plex Mono",monospace; font-size:12.5px; color:var(--accent); padding-top:2px; font-variant-numeric:tabular-nums}
+.ph-t{font-family:"Archivo",sans-serif; font-weight:600; font-size:15.5px; margin-bottom:2px}
+.ph-d{font-size:15px; color:var(--ink-2)}
+
+/* q&a walkthrough */
+.qa{border:1px solid var(--line); border-radius:4px; background:var(--surface); overflow:hidden}
+.qa + .qa{margin-top:12px}
+.q{padding:13px 16px; font-family:"Archivo",sans-serif; font-weight:600; font-size:15px; background:var(--surface-2); border-bottom:1px solid var(--line)}
+.a{padding:14px 16px; font-size:15px; color:var(--ink-2)}
+.chain{font-family:"IBM Plex Mono",monospace; font-size:12.5px; color:var(--cool); margin-bottom:8px; display:block; word-break:break-word}
+
+svg{display:block; max-width:100%; height:auto}
+footer{border-top:1px solid var(--line); margin-top:40px; padding-top:18px; color:var(--muted); font-size:13.5px; font-family:"Archivo",sans-serif}
+@media (prefers-reduced-motion:no-preference){a{transition:color .15s}}
+:focus-visible{outline:2px solid var(--accent); outline-offset:2px}
+</style>
+
+<header class="top">
+  <div class="top-inner">
+    <div>
+      <div class="eyebrow">Design &amp; Build Plan · Take-home</div>
+      <h1>Runway Alpha</h1>
+      <p class="dek">An analyst-facing agent that ranks US airports on how much profitable capacity a terminal or airfield renovation would unlock — deterministic score first, language second.</p>
+    </div>
+    <div class="stamp">
+      <b>Scope</b> ~380 US airports w/ scheduled service<br>
+      <b>Window</b> CY2023–CY2025 YTD<br>
+      <b>Build</b> ~8 h · one working day<br>
+      <b>Stack</b> Next.js · AI SDK v6 · DuckDB
+    </div>
+  </div>
+</header>
+
+<div class="wrap">
+
+<section id="thesis">
+  <div class="sec-head"><span class="sec-num">01</span><h2>What the agent actually answers</h2></div>
+  <p class="lead">The investment question is not "which airport is busy" — it is <strong>where is demand pressing against a physical constraint that concrete can relieve</strong>. Busy-and-roomy is a bad deal. Constrained-and-shrinking is a worse one. The target is constrained, growing, and structurally under-built.</p>
+  <p>So the core output is a single deterministic index, the <strong>Renovation Upside Score (RUS, 0–100)</strong>, decomposed into five named components an analyst can argue with. The LLM never produces the number. It picks the tool, sets the filters, and explains the arithmetic it was handed.</p>
+  <div class="grid3" style="margin-top:18px">
+    <div class="panel"><div class="eyebrow">Rank</div><p style="margin:6px 0 0;font-size:15px;color:var(--ink-2)">Peer-normalised RUS across any region, hub class, or state filter.</p></div>
+    <div class="panel"><div class="eyebrow">Compare</div><p style="margin:6px 0 0;font-size:15px;color:var(--ink-2)">Head-to-head on all five components plus raw operational inputs.</p></div>
+    <div class="panel"><div class="eyebrow">Diagnose</div><p style="margin:6px 0 0;font-size:15px;color:var(--ink-2)">Why a score is what it is: which input drove it, and how sure we are.</p></div>
+  </div>
+</section>
+
+<section id="data">
+  <div class="sec-head"><span class="sec-num">02</span><h2>Data sources</h2></div>
+  <p>All public, all free, no paid aviation vendor. Everything is pulled once at build time into a local DuckDB file so queries are sub-100 ms and reproducible; only two feeds are live at request time.</p>
+  <div class="tablewrap">
+    <table>
+      <thead><tr><th>Source</th><th>Gives us</th><th>Access</th><th>Refresh</th><th>Known catch</th></tr></thead>
+      <tbody>
+        <tr><td class="k">BTS TranStats<br><span class="mono">Marketing Carrier On-Time</span></td><td>Per-flight ops, dep/arr delay minutes, taxi-out, cancels, diversions, tail &amp; equipment</td><td><span class="tag free">free CSV</span></td><td><span class="tag batch">monthly</span></td><td>~2–3 month publication lag; ~10 reporting carriers only</td></tr>
+        <tr><td class="k">BTS T-100 Segment</td><td>Seats flown, passengers carried, load factor, per airport-pair distance</td><td><span class="tag free">free CSV</span></td><td><span class="tag batch">monthly</span></td><td>Longer lag than On-Time; includes freight rows to filter out</td></tr>
+        <tr><td class="k">FAA ACAIS enplanements</td><td>Annual passengers, official hub class (L / M / S / N)</td><td><span class="tag free">free XLSX</span></td><td><span class="tag batch">annual</span></td><td>Calendar-year only — no intra-year trend</td></tr>
+        <tr><td class="k">FAA Terminal Area Forecast</td><td>Forecast enplanements &amp; operations to 2050 per facility</td><td><span class="tag free">free CSV</span></td><td><span class="tag batch">annual</span></td><td>FAA's own forecast, not a market view — treat as one input, never as truth</td></tr>
+        <tr><td class="k">OurAirports</td><td>Runway count, length, surface, lat/lon, elevation, IATA↔ICAO map</td><td><span class="tag free">free CSV</span></td><td><span class="tag batch">on build</span></td><td>Community-edited; runway data occasionally stale</td></tr>
+        <tr><td class="k">FAA NAS Status</td><td>Live ground stops, ground delay programs, cause (weather / volume / equipment)</td><td><span class="tag free">free JSON</span></td><td><span class="tag key">live</span></td><td>Snapshot only — no history, so we log it ourselves</td></tr>
+        <tr><td class="k">OpenSky Network</td><td>Live arrivals/departures per airport for a spot-check of current movement rate</td><td><span class="tag key">free acct</span></td><td><span class="tag key">live</span></td><td>Hard rate limits; US coverage thinner than EU — used as colour, never as a score input</td></tr>
+        <tr><td class="k">Census ACS county population</td><td>Catchment population within 60 min drive proxy (100 km radius)</td><td><span class="tag free">free API</span></td><td><span class="tag batch">annual</span></td><td>Radius ≠ drive time; a deliberate simplification</td></tr>
+      </tbody>
+    </table>
+  </div>
+  <p class="note" style="margin-top:16px">Gate/terminal square footage has no free national dataset. We proxy built capacity with <span class="mono">runway-adjusted movement capacity</span> and flag every terminal-side claim as inferred, not measured. This is the single biggest known weakness and it is stated in the agent's own answers.</p>
+</section>
+
+<section id="scoring">
+  <div class="sec-head"><span class="sec-num">03</span><h2>Scoring methodology</h2></div>
+  <p>Five components, each computed in TypeScript from DuckDB aggregates, each winsorised at the 5th/95th percentile then min–max normalised <em>within the airport's hub class</em> so a small airport is scored against small airports, not against ATL.</p>
+
+  <div class="formula">
+RUS = 100 × ( 0.30·<b>CPI</b> + 0.25·<b>HCD</b> + 0.20·<b>DMI</b> + 0.15·<b>UDI</b> − 0.10·<b>RSK</b> )   <span class="c">clamped [0,100]</span>
+
+<span class="c">CPI  Congestion Pressure   = z(avg dep delay) · .35 + z(taxi-out p80) · .30 + z(peak-hour ops ÷ runway capacity) · .35</span>
+<span class="c">HCD  Headroom Deficit      = z(annual ops ÷ (runways × 200k)) · .5 + z(enplanements ÷ hub-class median) · .5</span>
+<span class="c">DMI  Demand Momentum       = z(3-yr enplanement CAGR) · .6 + z(TAF 2030 growth) · .4</span>
+<span class="c">UDI  Unmet Demand          = z(load factor − 0.83) · .4 + z(cancel+divert rate) · .3 + z(pax per catchment capita) · .3</span>
+<span class="c">RSK  Risk / feasibility    = z(carrier HHI) · .5 + z(share of delays that are weather) · .5   ← subtracted</span>
+  </div>
+
+  <div class="tablewrap" style="margin-top:22px">
+    <table>
+      <thead><tr><th>Component</th><th>Weight</th><th>Investment logic</th></tr></thead>
+      <tbody>
+        <tr><td class="k">Congestion Pressure</td><td style="width:150px"><span class="wt">0.30</span><span class="bar"><i style="width:100%"></i></span></td><td>Delay and taxi-out are the observable price of a constraint. Highest weight because it is the best-measured signal we have.</td></tr>
+        <tr><td class="k">Headroom Deficit</td><td><span class="wt">0.25</span><span class="bar"><i style="width:83%"></i></span></td><td>Throughput per unit of physical plant. High deficit = the airport is doing a lot with too little, which is exactly what a build fixes.</td></tr>
+        <tr><td class="k">Demand Momentum</td><td><span class="wt">0.20</span><span class="bar"><i style="width:67%"></i></span></td><td>Renovation pays back over 20+ years. A congested but flat airport is a trap.</td></tr>
+        <tr><td class="k">Unmet Demand</td><td><span class="wt">0.15</span><span class="bar"><i style="width:50%"></i></span></td><td>Spilled passengers: full aircraft, cancelled flights, a catchment flying less than its population implies.</td></tr>
+        <tr><td class="k">Risk penalty</td><td><span class="wt">−0.10</span><span class="bar"><i style="width:33%;background:var(--crit)"></i></span></td><td>Single-carrier dependence and weather-driven delay both mean new concrete may not convert into new throughput.</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <h3>Rules that keep the number honest</h3>
+  <ul>
+    <li><strong>Peer normalisation.</strong> z-scores computed inside FAA hub class, so rankings compare like with like unless the analyst explicitly asks across classes.</li>
+    <li><strong>Coverage gate.</strong> Any airport missing more than one component input gets a score of <span class="mono">null</span>, not a guessed one, and is listed separately as "insufficient data".</li>
+    <li><strong>Confidence band.</strong> Every score ships with ± derived from input completeness and data age. A 71 ± 9 and a 71 ± 2 are different recommendations.</li>
+    <li><strong>Weights are config, not code.</strong> <span class="mono">weights.json</span> is exposed in the UI so an analyst can re-run the whole ranking under their own thesis. Sensitivity output shows which airports move most.</li>
+  </ul>
+</section>
+
+<section id="arch">
+  <div class="sec-head"><span class="sec-num">04</span><h2>Architecture</h2></div>
+  <p>The LLM sits at the edges — parsing intent on the way in, narrating on the way out. It never touches arithmetic and never sees raw CSV.</p>
+
+  <svg viewBox="0 0 940 320" role="img" aria-label="Architecture: batch ETL feeds DuckDB; chat UI calls an agent that calls deterministic scoring tools.">
+    <defs>
+      <marker id="ar" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto">
+        <path d="M0,0 L10,5 L0,10 z" fill="var(--line-strong)"/>
+      </marker>
+    </defs>
+    <g font-family="IBM Plex Mono, monospace" font-size="11.5">
+      <!-- column 1 -->
+      <text x="16" y="26" fill="var(--muted)" letter-spacing="1.4">BATCH · BUILD TIME</text>
+      <rect x="16" y="40" width="182" height="132" rx="4" fill="var(--surface)" stroke="var(--line)"/>
+      <text x="30" y="64" fill="var(--ink)" font-size="12.5">BTS On-Time</text>
+      <text x="30" y="86" fill="var(--ink)" font-size="12.5">BTS T-100</text>
+      <text x="30" y="108" fill="var(--ink)" font-size="12.5">FAA ACAIS + TAF</text>
+      <text x="30" y="130" fill="var(--ink)" font-size="12.5">OurAirports</text>
+      <text x="30" y="152" fill="var(--ink)" font-size="12.5">Census ACS</text>
+      <line x1="198" y1="106" x2="256" y2="106" stroke="var(--line-strong)" marker-end="url(#ar)"/>
+
+      <!-- column 2 -->
+      <rect x="258" y="62" width="152" height="88" rx="4" fill="var(--accent-soft)" stroke="var(--accent)"/>
+      <text x="274" y="92" fill="var(--accent-ink)" font-size="12.5">ingest.ts</text>
+      <text x="274" y="112" fill="var(--accent-ink)" font-size="11">clean · join · derive</text>
+      <text x="274" y="130" fill="var(--accent-ink)" font-size="11">→ airports.duckdb</text>
+      <line x1="410" y1="106" x2="468" y2="106" stroke="var(--line-strong)" marker-end="url(#ar)"/>
+
+      <!-- column 3 -->
+      <rect x="470" y="46" width="176" height="120" rx="4" fill="var(--surface)" stroke="var(--line)"/>
+      <text x="486" y="72" fill="var(--ink)" font-size="12.5">scoring/</text>
+      <text x="486" y="94" fill="var(--ink-2)" font-size="11">components.ts</text>
+      <text x="486" y="112" fill="var(--ink-2)" font-size="11">normalise.ts</text>
+      <text x="486" y="130" fill="var(--ink-2)" font-size="11">weights.json</text>
+      <text x="486" y="152" fill="var(--cool)" font-size="11">pure · unit-tested</text>
+      <line x1="646" y1="106" x2="704" y2="106" stroke="var(--line-strong)" marker-end="url(#ar)"/>
+
+      <!-- live feeds -->
+      <text x="16" y="216" fill="var(--muted)" letter-spacing="1.4">LIVE · REQUEST TIME</text>
+      <rect x="16" y="230" width="182" height="66" rx="4" fill="var(--surface)" stroke="var(--line)"/>
+      <text x="30" y="254" fill="var(--ink)" font-size="12.5">FAA NAS Status</text>
+      <text x="30" y="276" fill="var(--ink)" font-size="12.5">OpenSky</text>
+      <path d="M198 263 L440 263 L440 140" fill="none" stroke="var(--line-strong)" stroke-dasharray="4 4" marker-end="url(#ar)"/>
+
+      <!-- agent -->
+      <rect x="706" y="30" width="218" height="152" rx="4" fill="var(--cool-soft)" stroke="var(--cool)"/>
+      <text x="722" y="56" fill="var(--cool)" font-size="12.5">agent (AI SDK v6)</text>
+      <text x="722" y="80" fill="var(--ink-2)" font-size="11">rankAirports()</text>
+      <text x="722" y="98" fill="var(--ink-2)" font-size="11">compareAirports()</text>
+      <text x="722" y="116" fill="var(--ink-2)" font-size="11">airportProfile()</text>
+      <text x="722" y="134" fill="var(--ink-2)" font-size="11">haulMix()</text>
+      <text x="722" y="152" fill="var(--ink-2)" font-size="11">explainScore()</text>
+      <text x="722" y="172" fill="var(--muted)" font-size="10.5">tools return numbers + provenance</text>
+      <line x1="815" y1="182" x2="815" y2="228" stroke="var(--line-strong)" marker-end="url(#ar)"/>
+      <rect x="706" y="230" width="218" height="66" rx="4" fill="var(--surface)" stroke="var(--line)"/>
+      <text x="722" y="256" fill="var(--ink)" font-size="12.5">chat UI · streaming</text>
+      <text x="722" y="278" fill="var(--muted)" font-size="11">+ Web Speech voice I/O</text>
+    </g>
+  </svg>
+
+  <div class="grid2" style="margin-top:22px">
+    <div class="panel">
+      <h3 style="margin-top:0">Runtime</h3>
+      <ul style="margin-bottom:0">
+        <li>Next.js App Router on Vercel, Node runtime (Fluid Compute).</li>
+        <li>AI SDK v6 <span class="mono">streamText</span> + tool calling, models addressed as <span class="mono">"provider/model"</span> through AI Gateway so the provider is swappable.</li>
+        <li>DuckDB-WASM read-only against a versioned <span class="mono">.duckdb</span> artifact — no database to provision, whole dataset is ~40 MB.</li>
+        <li>Voice: browser <span class="mono">SpeechRecognition</span> in, <span class="mono">speechSynthesis</span> out. Bonus-tier, degrades to text silently.</li>
+      </ul>
+    </div>
+    <div class="panel">
+      <h3 style="margin-top:0">Where AI is used — and where it is not</h3>
+      <ul style="margin-bottom:0">
+        <li><strong>Is:</strong> mapping "New England" → the 6-state filter; resolving "LA and Santa Ana" → LAX/BUR/LGB and SNA; choosing which tool answers; writing the prose; carrying context across follow-ups.</li>
+        <li><strong>Is not:</strong> any component value, any weight, any ranking order, any percentage. Those come from tested pure functions and are injected into the answer as structured JSON.</li>
+        <li>System prompt forbids stating a figure absent from tool output; a post-check regexes numerals in the reply against the tool payload and flags mismatches in dev.</li>
+      </ul>
+    </div>
+  </div>
+</section>
+
+<section id="walk">
+  <div class="sec-head"><span class="sec-num">05</span><h2>The four questions, walked through</h2></div>
+
+  <div class="qa">
+    <div class="q">Which airports in New England are strong candidates for terminal expansion?</div>
+    <div class="a"><span class="chain">rankAirports({ states:[ME,NH,VT,MA,RI,CT], limit:5, minEnplanements:100000 })</span>Returns RUS-ranked list with per-component breakdown. Answer names the top 3, gives each one's dominant driver (e.g. "BDL scores on headroom deficit, not delay"), and states that terminal-specific square footage is inferred, so the ranking is about movement capacity pressure rather than gate count.</div>
+  </div>
+
+  <div class="qa">
+    <div class="q">Compare LA and Santa Ana airport congestion levels.</div>
+    <div class="a"><span class="chain">compareAirports({ codes:[LAX, SNA], focus:"congestion" })</span>Ambiguity handled explicitly: "LA" resolves to LAX by default, with BUR/LGB/ONT offered as a follow-up. Output is the CPI sub-table — avg departure delay, p80 taxi-out, peak-hour ops vs runway capacity — plus the live NAS Status line for each if a delay program is active right now.</div>
+  </div>
+
+  <div class="qa">
+    <div class="q">What is the percentage of long-haul flights out of Anchorage?</div>
+    <div class="a"><span class="chain">haulMix({ code:"ANC", basis:"departures", period:"CY2024" })</span>Great-circle distance per T-100 segment, bucketed short &lt;1,500 km / medium 1,500–4,000 / long &gt;4,000. Two numbers reported separately, because for ANC they diverge sharply: share of <em>departures</em> vs share of <em>seats</em>. Cargo-only segments excluded and that exclusion is stated — ANC is a top-five global freight hub and including it would triple the answer.</div>
+  </div>
+
+  <div class="qa">
+    <div class="q">What is the unmet flight demand at SFO and why?</div>
+    <div class="a"><span class="chain">explainScore({ code:"SFO", component:"UDI" })</span>Decomposes UDI into its three inputs with the raw values, then attributes: load factor above the peer median, cancellation rate concentrated in specific months, catchment population vs enplanements. Closes with the honest limit — this is <em>revealed</em> spill, not a demand model; true unmet demand needs fare and search data we do not have.</div>
+  </div>
+</section>
+
+<section id="tradeoffs">
+  <div class="sec-head"><span class="sec-num">06</span><h2>Key tradeoffs and what we're not claiming</h2></div>
+  <div class="grid2">
+    <div class="flag"><span class="dot a"></span><div><strong>Batch over live.</strong> Reproducibility and speed beat freshness for an investment screen. Cost: the dataset is a quarter stale, and the agent says so in every answer that leans on BTS.</div></div>
+    <div class="flag"><span class="dot a"></span><div><strong>No terminal square footage exists publicly.</strong> "Terminal expansion" is therefore scored as movement-capacity pressure. A real diligence process would buy this data; we flag it rather than fake it.</div></div>
+    <div class="flag"><span class="dot b"></span><div><strong>Weights are a thesis, not a fact.</strong> 0.30/0.25/0.20/0.15/−0.10 encodes a view that observable delay is the strongest constraint signal. Exposed and re-runnable so a disagreeing analyst is one edit away from their own ranking.</div></div>
+    <div class="flag"><span class="dot b"></span><div><strong>Peer-class normalisation hides cross-class comparison.</strong> A small airport's 88 and a large hub's 88 mean different absolute opportunity sizes. Raw components are always shown alongside so the analyst can re-rank.</div></div>
+    <div class="flag"><span class="dot c"></span><div><strong>No construction cost, land, or political feasibility.</strong> RUS measures upside, not cost or buildability. It ranks candidates for a human to underwrite — it does not price the deal.</div></div>
+    <div class="flag"><span class="dot c"></span><div><strong>Reporting-carrier bias.</strong> BTS On-Time covers only the ~10 largest carriers, so regional-heavy airports have thinner delay data. Captured in the confidence band, not smoothed over.</div></div>
+  </div>
+</section>
+
+<section id="build">
+  <div class="sec-head"><span class="sec-num">07</span><h2>Build order</h2></div>
+  <p>Sequenced so a working end-to-end slice exists after phase 4 — if time runs out, everything after that degrades gracefully.</p>
+  <ol class="phases">
+    <li><span class="hrs">0.0–1.0</span><div><div class="ph-t">Ingest</div><div class="ph-d">Pull the five batch sources, normalise IATA codes, load DuckDB. Ship the <span class="mono">.duckdb</span> file to the repo so the build is offline-reproducible.</div></div></li>
+    <li><span class="hrs">1.0–2.5</span><div><div class="ph-t">Scoring core</div><div class="ph-d">Pure functions for the five components + winsorise/normalise. Unit tests with known fixtures, including the null-coverage path. This is the deliverable that must be right.</div></div></li>
+    <li><span class="hrs">2.5–3.5</span><div><div class="ph-t">Tools layer</div><div class="ph-d">Five typed tools over the scoring core, each returning value + provenance + confidence. Callable and testable without any LLM.</div></div></li>
+    <li><span class="hrs">3.5–5.0</span><div><div class="ph-t">Agent + chat</div><div class="ph-d">System prompt, tool wiring, streaming UI, multi-turn context. Verify all four sample questions end to end.</div></div></li>
+    <li><span class="hrs">5.0–6.0</span><div><div class="ph-t">Transparency UI</div><div class="ph-d">Component breakdown panel, weight sliders, confidence badges, source-and-vintage line under every answer.</div></div></li>
+    <li><span class="hrs">6.0–6.5</span><div><div class="ph-t">Voice</div><div class="ph-d">Web Speech in/out behind a feature flag. Bonus — cut first if anything above slips.</div></div></li>
+    <li><span class="hrs">6.5–8.0</span><div><div class="ph-t">Docs + deploy</div><div class="ph-d">Architecture doc, README with run instructions, Vercel deploy, README-linked worked examples of the four questions.</div></div></li>
+  </ol>
+</section>
+
+<section id="assume">
+  <div class="sec-head"><span class="sec-num">08</span><h2>Assumptions stated up front</h2></div>
+  <ul>
+    <li>US commercial airports with scheduled passenger service only; no general-aviation, military, or territorial fields beyond PR/VI.</li>
+    <li>"Congestion" means departure delay, taxi-out time, and peak-hour movement rate — not TSA queue time or gate-hold, which are unpublished.</li>
+    <li>Runway practical capacity is approximated at 200,000 annual operations per runway, before adjusting for configuration and geometry. Crude; parallel-runway airports are consequently over-penalised and this is noted per airport.</li>
+    <li>Catchment is a 100 km radius sum of county population — a stand-in for drive-time isochrones.</li>
+    <li>Long haul is &gt;4,000 km great-circle. The threshold is a parameter, and the agent will restate it whenever it reports a haul-mix figure.</li>
+    <li>Passenger and operations data are historical. Nothing here forecasts demand except FAA's own TAF, used at 0.4 of one component.</li>
+  </ul>
+</section>
+
+<footer>Runway Alpha — plan of record. Every figure the agent reports carries its source, its vintage, and its confidence; where the data cannot answer, the agent says so instead of estimating.</footer>
+
+</div>
