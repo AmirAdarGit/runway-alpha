@@ -184,10 +184,21 @@ function answerCompare(q: string, codes: string[]): DeterministicAnswer {
       ? `\n\n**Ambiguity resolved.** "${metro.label}" covers ${metro.codes.join(", ")}. This answer used ${codes.join(" and ")}; ask again naming another field if you meant a different one.`
       : "";
 
+  // Lead with the verdict computed from raw metrics, not from component values,
+  // which are normalised inside each airport's own hub class.
+  const verdict = r.rawComparison?.headline
+    ? `**${r.rawComparison.headline}**\n\n` +
+      r.rawComparison.metrics
+        .filter((m) => m.verdict)
+        .map((m) => `- ${m.verdict}`)
+        .join("\n") +
+      "\n\n"
+    : "";
+
   return {
     text: `Comparing **${codes.join(" vs ")}** on ${focus}.
 
-${header}
+${verdict}${header}
 ${sep}
 ${body}
 

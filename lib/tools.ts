@@ -123,6 +123,83 @@ function summarise(s: ScoredAirport) {
   };
 }
 
+/**
+ * A verdict the model does not have to compute.
+ *
+ * For each raw metric that matters to the focus, say which airport is higher
+ * and by how much. These are directly comparable in a way normalised component
+ * values are not, so this is what an answer should lead with.
+ */
+const FOCUS_METRICS: Record<string, { key: string; label: string; higherMeans: string }[]> = {
+  congestion: [
+    { key: "avgDepartureDelayMin", label: "average departure delay", higherMeans: "more delay" },
+    { key: "p80TaxiOutMin", label: "taxi-out at the 80th percentile", higherMeans: "longer queues" },
+    {
+      key: "peakMovementsPerRunway",
+      label: "peak-hour movements per runway",
+      higherMeans: "more pressure on each runway",
+    },
+    { key: "cancelRatePct", label: "cancellation rate", higherMeans: "less reliable" },
+  ],
+  capacity: [
+    { key: "runwayUtilisation", label: "movements vs runway capacity", higherMeans: "less headroom" },
+    { key: "enplanementsPerRunway", label: "enplanements per runway", higherMeans: "less headroom" },
+  ],
+  growth: [
+    { key: "cagr2yrPct", label: "2-year enplanement CAGR", higherMeans: "faster growth" },
+    { key: "growthLastYearPct", label: "growth 2024 to 2025", higherMeans: "faster growth" },
+  ],
+  demand: [
+    { key: "paxPerDeparture", label: "passengers per departure", higherMeans: "fuller aircraft" },
+    { key: "populationPerEnplanement", label: "catchment population per enplanement", higherMeans: "a less-served catchment" },
+  ],
+};
+
+function compareOnRawMetrics(rows: Record<string, unknown>[], focus: CompareFocus) {
+  const metrics = FOCUS_METRICS[focus];
+  if (!metrics || rows.length < 2) {
+    return {
+      note: "No directly comparable raw metric set for this focus; compare the components within a hub class only.",
+      metrics: [],
+    };
+  }
+
+  const verdicts = metrics.map((m) => {
+    const measured = rows
+      .map((r) => ({ code: String(r.code), value: r[m.key] }))
+      .filter((x): x is { code: string; value: number } => typeof x.value === "number");
+    if (measured.length < 2) {
+      return { metric: m.label, verdict: "not measurable for every airport here" };
+    }
+    const sorted = [...measured].sort((a, b) => b.value - a.value);
+    const [top, bottom] = [sorted[0], sorted.at(-1)!];
+    const gapPct = bottom.value === 0 ? null : round(((top.value / bottom.value) - 1) * 100);
+    return {
+      metric: m.label,
+      highest: top.code,
+      lowest: bottom.code,
+      values: Object.fromEntries(measured.map((x) => [x.code, round(x.value, 2)])),
+      verdict:
+        gapPct === null
+          ? `${top.code} is higher, meaning ${m.higherMeans}`
+          : `${top.code} is ${gapPct}% higher than ${bottom.code}, meaning ${m.higherMeans}`,
+    };
+  });
+
+  // Whoever leads on the most raw metrics leads on the focus, on the evidence.
+  const tally = new Map<string, number>();
+  for (const v of verdicts) if (v.highest) tally.set(v.highest, (tally.get(v.highest) ?? 0) + 1);
+  const ranked = [...tally.entries()].sort((a, b) => b[1] - a[1]);
+  const headline =
+    ranked.length === 0
+      ? "Not enough measured metrics to call it."
+      : ranked.length > 1 && ranked[0][1] === ranked[1][1]
+        ? `Split decision: no airport leads on a majority of the ${focus} metrics. Report the metrics individually rather than declaring a winner.`
+        : `${ranked[0][0]} leads on ${ranked[0][1]} of ${verdicts.length} ${focus} metrics.`;
+
+  return { headline, basis: "raw measured metrics, directly comparable across hub classes", metrics: verdicts };
+}
+
 /** Comparison against the peer median, without silly "below by 0%" phrasing. */
 function describeVsMedian(raw: number | null, peerMedian: number | null): string {
   if (raw === null || peerMedian === null || peerMedian === 0) return "not measurable";
@@ -334,11 +411,30 @@ export function compareAirports(
     }
   };
 
+  const crossClass = new Set(found.map((s) => s.airport.hub)).size > 1;
+  const rows = found.map(metricsFor) as Record<string, unknown>[];
+
+  // Component values are normalised inside a hub class. Across classes they are
+  // not a comparison, they are a category error — and a model handed a 0.84
+  // beside a 0.38 will lead with it. Rename the field so it cannot be misread,
+  // and supply a verdict computed from the raw metrics instead.
+  if (crossClass) {
+    for (const row of rows) {
+      for (const key of Object.keys(row)) {
+        if (key.endsWith("Component")) {
+          row[`${key}_normalisedWithinOwnHubClassOnly_notComparableHere`] = row[key];
+          delete row[key];
+        }
+      }
+    }
+  }
+
   return {
     tool: "compareAirports",
     focus,
-    airports: found.map(metricsFor),
+    airports: rows,
     missing,
+    rawComparison: compareOnRawMetrics(rows, focus),
     // Comparing across hub classes mixes two different normalisation scales.
     comparabilityNote:
       new Set(found.map((s) => s.airport.hub)).size > 1

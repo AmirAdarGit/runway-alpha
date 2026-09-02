@@ -31,10 +31,18 @@ GOOGLE_GENERATIVE_AI_API_KEY=...   # free tier
 ANTHROPIC_API_KEY=...
 ```
 
-Optional overrides: `GROQ_MODEL`, `GOOGLE_MODEL`, `ANTHROPIC_MODEL`.
+Optional overrides: `GROQ_MODEL`, `GOOGLE_MODEL`, `ANTHROPIC_MODEL`. `GET /api/models`
+lists what the configured credential can actually reach — provider catalogues
+churn, and `llama-3.3-70b-versatile` has already been retired from Groq.
+
+**On Groq latency.** The free tier queues. The same question with identical
+input tokens has come back in 2.5 s and in 46 s. Nothing in this app accounts
+for the difference. If you are demonstrating live, either warm the model with
+one throwaway question first, or use **Run without the model** — the answer is
+instant and the figures are identical.
 
 ```bash
-npm test         # 30 tests: scoring arithmetic + tool integration
+npm test         # 38 tests: scoring arithmetic, tool integration, number check
 npm run typecheck
 ```
 

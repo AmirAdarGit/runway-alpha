@@ -22,6 +22,8 @@ export interface ChatResponse {
   /** Numbers in the answer that were not found in any tool result. */
   numberCheck: { checked: number; unverified: string[] };
   elapsedMs: number;
+  /** Model steps and token usage, so slow or chatty answers are visible. */
+  usage?: { steps: number; inputTokens?: number; outputTokens?: number };
 }
 
 export async function POST(req: NextRequest) {
@@ -59,6 +61,7 @@ export async function POST(req: NextRequest) {
       tools: agentTools,
       stopWhen: stepCountIs(6),
       temperature: 0.2,
+      providerOptions: choice.providerOptions,
     });
 
     const toolCalls = result.steps.flatMap((step) =>
@@ -89,6 +92,11 @@ export async function POST(req: NextRequest) {
       toolCalls,
       mode: "model",
       model: choice.label,
+      usage: {
+        steps: result.steps.length,
+        inputTokens: result.usage?.inputTokens,
+        outputTokens: result.usage?.outputTokens,
+      },
       numberCheck: verifyNumbers(result.text, toolCalls.map((t) => t.result), question),
       elapsedMs: Date.now() - started,
     };

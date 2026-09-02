@@ -23,6 +23,12 @@ function isIgnorable(token: string, value: number): boolean {
 }
 
 export function verifyNumbers(text: string, toolResults: unknown[], question = ""): NumberCheck {
+  // Dates are not claims. "2024-12-31" would otherwise report 12 and 31 as
+  // figures the tools never returned.
+  text = text.replace(/\d{4}[-‑/]\d{1,2}[-‑/]\d{1,2}/g, " ");
+  // Models group thousands with spaces as often as commas ("376 456",
+  // "376\u202f456"). Without this, one figure reads as two invented ones.
+  text = text.replace(/(\d)[\u00a0\u202f\u2009 ](?=\d{3}\b)/g, "$1,");
   const haystack = JSON.stringify(toolResults);
   // Every number the tools returned, at full precision and rounded, so that a
   // model quoting "18.7" against a stored 18.7231 still verifies.
@@ -48,9 +54,9 @@ export function verifyNumbers(text: string, toolResults: unknown[], question = "
   const unverified: string[] = [];
   let checked = 0;
 
-  for (const m of text.matchAll(/-?\d[\d,]*(?:\.\d+)?/g)) {
+  for (const m of text.matchAll(/-?\d[\d,\u00a0\u202f]*(?:\.\d+)?/g)) {
     const token = m[0];
-    const value = Number(token.replace(/,/g, ""));
+    const value = Number(token.replace(/[,\u00a0\u202f]/g, ""));
     if (isIgnorable(token, value)) continue;
     if (fromQuestion.has(String(value))) continue;
     checked++;
