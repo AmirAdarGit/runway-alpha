@@ -1,0 +1,10 @@
+import { DuckDBInstance } from "@duckdb/node-api";
+const db = await DuckDBInstance.create(":memory:");
+const c = await db.connect();
+const q = async (sql: string) => (await (await c.run(sql)).getRowObjectsJson()) as any[];
+await c.run("INSTALL excel"); await c.run("LOAD excel");
+const rows = await q(`SELECT * FROM read_xlsx('data/raw/enplanements_2024.xlsx', all_varchar=true) LIMIT 6`);
+console.log("COLS:", Object.keys(rows[0] ?? {}));
+for (const r of rows.slice(0,4)) console.log(JSON.stringify(r).slice(0,400));
+const n = await q(`SELECT count(*) c FROM read_xlsx('data/raw/enplanements_2024.xlsx', all_varchar=true)`);
+console.log("ROWS:", n[0]);

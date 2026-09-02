@@ -140,10 +140,10 @@ footer{border-top:1px solid var(--line); margin-top:40px; padding-top:18px; colo
       <p class="dek">An analyst-facing agent that ranks US airports on how much profitable capacity a terminal or airfield renovation would unlock — deterministic score first, language second.</p>
     </div>
     <div class="stamp">
-      <b>Scope</b> ~380 US airports w/ scheduled service<br>
-      <b>Window</b> CY2023–CY2025 YTD<br>
-      <b>Build</b> ~8 h · one working day<br>
-      <b>Stack</b> Next.js · AI SDK v6 · DuckDB
+      <b>Scope</b> 382 US airports w/ scheduled service<br>
+      <b>Flights</b> CY2024, 12 months · 7.0 M records<br>
+      <b>Passengers</b> FAA ACAIS CY2023–CY2025<br>
+      <b>Stack</b> Next.js 16 · AI SDK v7 · DuckDB (offline)
     </div>
   </div>
 </header>
@@ -169,13 +169,13 @@ footer{border-top:1px solid var(--line); margin-top:40px; padding-top:18px; colo
       <thead><tr><th>Source</th><th>Gives us</th><th>Access</th><th>Refresh</th><th>Known catch</th></tr></thead>
       <tbody>
         <tr><td class="k">BTS TranStats<br><span class="mono">Marketing Carrier On-Time</span></td><td>Per-flight ops, dep/arr delay minutes, taxi-out, cancels, diversions, tail &amp; equipment</td><td><span class="tag free">free CSV</span></td><td><span class="tag batch">monthly</span></td><td>~2–3 month publication lag; ~10 reporting carriers only</td></tr>
-        <tr><td class="k">BTS T-100 Segment</td><td>Seats flown, passengers carried, load factor, per airport-pair distance</td><td><span class="tag free">free CSV</span></td><td><span class="tag batch">monthly</span></td><td>Longer lag than On-Time; includes freight rows to filter out</td></tr>
+        <tr><td class="k">BTS T-100 Segment<br><span class="mono">not available</span></td><td><s>Seats, load factor</s> — every bulk endpoint now returns 404 and the form download is gone</td><td><span class="tag batch">dropped</span></td><td>—</td><td>Load is proxied instead by passengers per departure, and labelled a proxy in every answer</td></tr>
         <tr><td class="k">FAA ACAIS enplanements</td><td>Annual passengers, official hub class (L / M / S / N)</td><td><span class="tag free">free XLSX</span></td><td><span class="tag batch">annual</span></td><td>Calendar-year only — no intra-year trend</td></tr>
-        <tr><td class="k">FAA Terminal Area Forecast</td><td>Forecast enplanements &amp; operations to 2050 per facility</td><td><span class="tag free">free CSV</span></td><td><span class="tag batch">annual</span></td><td>FAA's own forecast, not a market view — treat as one input, never as truth</td></tr>
+        <tr><td class="k">FAA Terminal Area Forecast<br><span class="mono">not used</span></td><td><s>Forecast enplanements to 2050</s></td><td><span class="tag batch">dropped</span></td><td>—</td><td>Cut deliberately: FAA's own forecast is not a market view, and two years of measured enplanements carry the momentum component honestly</td></tr>
         <tr><td class="k">OurAirports</td><td>Runway count, length, surface, lat/lon, elevation, IATA↔ICAO map</td><td><span class="tag free">free CSV</span></td><td><span class="tag batch">on build</span></td><td>Community-edited; runway data occasionally stale</td></tr>
         <tr><td class="k">FAA NAS Status</td><td>Live ground stops, ground delay programs, cause (weather / volume / equipment)</td><td><span class="tag free">free JSON</span></td><td><span class="tag key">live</span></td><td>Snapshot only — no history, so we log it ourselves</td></tr>
         <tr><td class="k">OpenSky Network</td><td>Live arrivals/departures per airport for a spot-check of current movement rate</td><td><span class="tag key">free acct</span></td><td><span class="tag key">live</span></td><td>Hard rate limits; US coverage thinner than EU — used as colour, never as a score input</td></tr>
-        <tr><td class="k">Census ACS county population</td><td>Catchment population within 60 min drive proxy (100 km radius)</td><td><span class="tag free">free API</span></td><td><span class="tag batch">annual</span></td><td>Radius ≠ drive time; a deliberate simplification</td></tr>
+        <tr><td class="k">US Census bulk files</td><td>County population estimates + county centroids → catchment within 100 km</td><td><span class="tag free">free CSV</span></td><td><span class="tag batch">annual</span></td><td>The ACS JSON API now demands a registered key; the bulk files do not, which keeps the whole ingest credential-free. Radius ≠ drive time</td></tr>
       </tbody>
     </table>
   </div>
@@ -189,11 +189,13 @@ footer{border-top:1px solid var(--line); margin-top:40px; padding-top:18px; colo
   <div class="formula">
 RUS = 100 × ( 0.30·<b>CPI</b> + 0.25·<b>HCD</b> + 0.20·<b>DMI</b> + 0.15·<b>UDI</b> − 0.10·<b>RSK</b> )   <span class="c">clamped [0,100]</span>
 
-<span class="c">CPI  Congestion Pressure   = z(avg dep delay) · .35 + z(taxi-out p80) · .30 + z(peak-hour ops ÷ runway capacity) · .35</span>
-<span class="c">HCD  Headroom Deficit      = z(annual ops ÷ (runways × 200k)) · .5 + z(enplanements ÷ hub-class median) · .5</span>
-<span class="c">DMI  Demand Momentum       = z(3-yr enplanement CAGR) · .6 + z(TAF 2030 growth) · .4</span>
-<span class="c">UDI  Unmet Demand          = z(load factor − 0.83) · .4 + z(cancel+divert rate) · .3 + z(pax per catchment capita) · .3</span>
-<span class="c">RSK  Risk / feasibility    = z(carrier HHI) · .5 + z(share of delays that are weather) · .5   ← subtracted</span>
+<span class="c">CPI  Congestion Pressure   = n(avg dep delay) · .35 + n(taxi-out p80) · .30 + n(peak-hour movements ÷ runways) · .35</span>
+<span class="c">HCD  Headroom Deficit      = n(annual movements ÷ (runways × 200k)) · .5 + n(enplanements ÷ runways) · .5</span>
+<span class="c">DMI  Demand Momentum       = n(enplanement CAGR 2023→25) · .6 + n(growth 2024→25) · .4</span>
+<span class="c">UDI  Unmet Demand          = n(pax per departure) · .4 + n(cancel + divert rate) · .3 + n(catchment pop per enplanement) · .3</span>
+<span class="c">RSK  Risk / feasibility    = n(carrier HHI) · .5 + n(weather + airspace share of delay) · .5   ← subtracted</span>
+
+<span class="c">n(x) = winsorise at the 5th/95th percentile of the airport's FAA hub class, then min–max scale to 0–1</span>
   </div>
 
   <div class="tablewrap" style="margin-top:22px">
@@ -214,7 +216,10 @@ RUS = 100 × ( 0.30·<b>CPI</b> + 0.25·<b>HCD</b> + 0.20·<b>DMI</b> + 0.15·<b
     <li><strong>Peer normalisation.</strong> z-scores computed inside FAA hub class, so rankings compare like with like unless the analyst explicitly asks across classes.</li>
     <li><strong>Coverage gate.</strong> Any airport missing more than one component input gets a score of <span class="mono">null</span>, not a guessed one, and is listed separately as "insufficient data".</li>
     <li><strong>Confidence band.</strong> Every score ships with ± derived from input completeness and data age. A 71 ± 9 and a 71 ± 2 are different recommendations.</li>
-    <li><strong>Weights are config, not code.</strong> <span class="mono">weights.json</span> is exposed in the UI so an analyst can re-run the whole ranking under their own thesis. Sensitivity output shows which airports move most.</li>
+    <li><strong>Weights are input, not code.</strong> The sliders re-score every airport in the browser, using the same module the API uses — no round trip, no model.</li>
+    <li><strong>Nearest-rank winsorising.</strong> Interpolated percentiles drag the 95th of a small peer group most of the way to its largest member, which is the exact outlier the winsorising exists to fence off. The bounds pick an observed value instead. A unit test pins this: adding an airport with a 100,000-minute delay must not move a normal airport's congestion score by more than 0.15.</li>
+    <li><strong>Sample floor.</strong> Delay statistics are dropped below 500 departures in the window. A 90-minute average over 40 flights is a real number and statistically empty.</li>
+    <li><strong>Screening floor.</strong> Airports under 100,000 annual enplanements (or 5,000 annualised departures) are scored but held out of the default ranking, so a field with 45 flights a year cannot top a shortlist.</li>
   </ul>
 </section>
 
@@ -284,7 +289,7 @@ RUS = 100 × ( 0.30·<b>CPI</b> + 0.25·<b>HCD</b> + 0.20·<b>DMI</b> + 0.15·<b
       <ul style="margin-bottom:0">
         <li>Next.js App Router on Vercel, Node runtime (Fluid Compute).</li>
         <li>AI SDK v6 <span class="mono">streamText</span> + tool calling, models addressed as <span class="mono">"provider/model"</span> through AI Gateway so the provider is swappable.</li>
-        <li>DuckDB-WASM read-only against a versioned <span class="mono">.duckdb</span> artifact — no database to provision, whole dataset is ~40 MB.</li>
+        <li>DuckDB is an <strong>offline ETL engine only</strong>, run over 7.0 M flight records. The runtime artifact is a single <span class="mono">data/airports.json</span> of raw measured metrics — small enough to hold in module scope on the server <em>and</em> ship to the browser, which is what makes the weight sliders instant.</li>
         <li>Voice: browser <span class="mono">SpeechRecognition</span> in, <span class="mono">speechSynthesis</span> out. Bonus-tier, degrades to text silently.</li>
       </ul>
     </div>
@@ -293,7 +298,7 @@ RUS = 100 × ( 0.30·<b>CPI</b> + 0.25·<b>HCD</b> + 0.20·<b>DMI</b> + 0.15·<b
       <ul style="margin-bottom:0">
         <li><strong>Is:</strong> mapping "New England" → the 6-state filter; resolving "LA and Santa Ana" → LAX/BUR/LGB and SNA; choosing which tool answers; writing the prose; carrying context across follow-ups.</li>
         <li><strong>Is not:</strong> any component value, any weight, any ranking order, any percentage. Those come from tested pure functions and are injected into the answer as structured JSON.</li>
-        <li>System prompt forbids stating a figure absent from tool output; a post-check regexes numerals in the reply against the tool payload and flags mismatches in dev.</li>
+        <li><strong>Three mechanisms enforce that line rather than trusting it.</strong> Every figure in a reply is extracted and looked for in the tool payloads, and anything unaccounted for is badged next to the answer in the UI. A model that returns figures without calling a tool is rejected outright and the deterministic answer served instead. And a "Run without the model" control answers the same question by rules over the same tools — if the two disagree, the model is wrong.</li>
       </ul>
     </div>
   </div>
@@ -328,10 +333,11 @@ RUS = 100 × ( 0.30·<b>CPI</b> + 0.25·<b>HCD</b> + 0.20·<b>DMI</b> + 0.15·<b
   <div class="grid2">
     <div class="flag"><span class="dot a"></span><div><strong>Batch over live.</strong> Reproducibility and speed beat freshness for an investment screen. Cost: the dataset is a quarter stale, and the agent says so in every answer that leans on BTS.</div></div>
     <div class="flag"><span class="dot a"></span><div><strong>No terminal square footage exists publicly.</strong> "Terminal expansion" is therefore scored as movement-capacity pressure. A real diligence process would buy this data; we flag it rather than fake it.</div></div>
-    <div class="flag"><span class="dot b"></span><div><strong>Weights are a thesis, not a fact.</strong> 0.30/0.25/0.20/0.15/−0.10 encodes a view that observable delay is the strongest constraint signal. Exposed and re-runnable so a disagreeing analyst is one edit away from their own ranking.</div></div>
+    <div class="flag"><span class="dot b"></span><div><strong>Weights are a thesis, not a fact.</strong> 0.30/0.25/0.20/0.15/−0.10 encodes a view that observable delay is the strongest constraint signal. The sliders make a disagreeing analyst one drag away from their own ranking.</div></div>
     <div class="flag"><span class="dot b"></span><div><strong>Peer-class normalisation hides cross-class comparison.</strong> A small airport's 88 and a large hub's 88 mean different absolute opportunity sizes. Raw components are always shown alongside so the analyst can re-rank.</div></div>
     <div class="flag"><span class="dot c"></span><div><strong>No construction cost, land, or political feasibility.</strong> RUS measures upside, not cost or buildability. It ranks candidates for a human to underwrite — it does not price the deal.</div></div>
-    <div class="flag"><span class="dot c"></span><div><strong>Reporting-carrier bias.</strong> BTS On-Time covers only the ~10 largest carriers, so regional-heavy airports have thinner delay data. Captured in the confidence band, not smoothed over.</div></div>
+    <div class="flag"><span class="dot c"></span><div><strong>Reporting-carrier bias.</strong> BTS On-Time covers only the largest carriers, so regional-heavy airports have thinner delay data. Captured in the confidence band and the sample floor, not smoothed over.</div></div>
+    <div class="flag"><span class="dot a"></span><div><strong>No seats, so no true load factor.</strong> BTS killed the T-100 bulk download mid-build. Load is proxied by passengers per departure — annual enplanements over annualised departures — which conflates load factor with aircraft gauge. Labelled a proxy everywhere it appears.</div></div>
   </div>
 </section>
 
@@ -358,6 +364,45 @@ RUS = 100 × ( 0.30·<b>CPI</b> + 0.25·<b>HCD</b> + 0.20·<b>DMI</b> + 0.15·<b
     <li>Catchment is a 100 km radius sum of county population — a stand-in for drive-time isochrones.</li>
     <li>Long haul is &gt;4,000 km great-circle. The threshold is a parameter, and the agent will restate it whenever it reports a haul-mix figure.</li>
     <li>Passenger and operations data are historical. Nothing here forecasts demand except FAA's own TAF, used at 0.4 of one component.</li>
+  </ul>
+</section>
+
+<section id="reality">
+  <div class="sec-head"><span class="sec-num">09</span><h2>What changed once we hit the data</h2></div>
+  <p class="lead">Four things in this plan did not survive contact with the sources. Each is recorded here rather than quietly edited out, because the substitutions are what an analyst needs to know to trust the numbers.</p>
+  <div class="tablewrap">
+    <table>
+      <thead><tr><th>Planned</th><th>What happened</th><th>What we did instead</th></tr></thead>
+      <tbody>
+        <tr>
+          <td class="k">BTS T-100 for seats<br>and load factor</td>
+          <td>Every bulk endpoint 404s and the form download is gone. No free replacement carries seats at airport-pair level.</td>
+          <td>Load is proxied by <span class="mono">enplanements ÷ annualised departures</span>. It conflates load factor with aircraft gauge, so it is labelled a proxy in the payload and in every answer that uses it.</td>
+        </tr>
+        <tr>
+          <td class="k">Census ACS API<br>for catchment</td>
+          <td>The JSON API now redirects to a "missing key" page; it wants a registered credential.</td>
+          <td>The Census bulk county-population and gazetteer-centroid files, which need no credential. The whole ingest still runs with zero keys.</td>
+        </tr>
+        <tr>
+          <td class="k">FAA Terminal Area<br>Forecast in momentum</td>
+          <td>Reachable, but it is the FAA forecasting itself — a planning document, not a market view.</td>
+          <td>Cut. Momentum now rests on two measured enplanement deltas (2023→25 CAGR, 2024→25 growth). Less forward-looking, entirely observed.</td>
+        </tr>
+        <tr>
+          <td class="k">Runtime DuckDB</td>
+          <td>Nothing needed it. The aggregate over 7.0 M flight records is ~380 rows.</td>
+          <td>DuckDB stayed as the offline ETL engine; the runtime artifact is one JSON file. That removed the database, and let the browser re-score locally when a weight moves.</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <h3>And three things the build added</h3>
+  <ul>
+    <li><strong>A deterministic answerer.</strong> Rules read the question, call the same tools, and write the answer from a template. It is the demo's safety net with no key and no network — and the control case: if the model disagrees with it, the model is wrong.</li>
+    <li><strong>A number check on every reply.</strong> Figures in the answer are matched against the tool payloads; unaccounted ones are badged in the UI. A reply with figures but no tool call is rejected before it reaches the user.</li>
+    <li><strong>An identifier fix worth naming.</strong> FAA keys its enplanement file on the FAA location identifier, not IATA — Mesa Gateway is AZA to travellers and IWA to the FAA. Two airports silently lost their passenger data until the join matched on either.</li>
   </ul>
 </section>
 

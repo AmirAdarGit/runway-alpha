@@ -6,12 +6,27 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "lint": "eslint"
+    "lint": "eslint",
+    "ingest:download": "tsx scripts/ingest/download.ts",
+    "ingest:ontime": "./scripts/ingest/ontime.sh 2024 6 1 2 3 4 5 6 7 8 9 10 11 12",
+    "ingest:build": "tsx scripts/ingest/build.mts",
+    "ingest": "npm run ingest:download && npm run ingest:ontime && npm run ingest:build",
+    "test": "tsx --test lib/*.test.ts lib/**/*.test.ts",
+    "typecheck": "tsc --noEmit"
   },
   "dependencies": {
+    "@ai-sdk/anthropic": "^4.0.48",
+    "@ai-sdk/google": "^4.0.62",
+    "@ai-sdk/groq": "^4.0.37",
+    "@ai-sdk/react": "^4.0.93",
+    "@duckdb/node-api": "^1.5.5-r.4",
+    "ai": "^7.0.90",
     "next": "16.3.4",
     "react": "19.2.8",
-    "react-dom": "19.2.8"
+    "react-dom": "19.2.8",
+    "react-markdown": "^10.1.0",
+    "remark-gfm": "^4.0.1",
+    "zod": "^4.5.4"
   },
   "devDependencies": {
     "@tailwindcss/postcss": "^4",
@@ -21,6 +36,7 @@
     "eslint": "^9",
     "eslint-config-next": "16.3.4",
     "tailwindcss": "^4",
+    "tsx": "^4.23.13",
     "typescript": "^5"
   }
 }
