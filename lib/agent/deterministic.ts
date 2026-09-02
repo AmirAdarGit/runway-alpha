@@ -305,11 +305,38 @@ ${r.caveats.map((c) => `- ${c}`).join("\n")}
   };
 }
 
+/** Say out loud when the subject came from the previous turn, not this one. */
+function withCarryNote(
+  answer: DeterministicAnswer,
+  inherited: boolean,
+  subject: string,
+): DeterministicAnswer {
+  if (!inherited) return answer;
+  return {
+    ...answer,
+    text: `*Carried over from the previous question: ${subject}.*\n\n${answer.text}`,
+  };
+}
+
 /* ------------------------------------------------------------- routing */
 
-export function answerDeterministically(question: string): DeterministicAnswer {
+export function answerDeterministically(
+  question: string,
+  history: { role: string; content: string }[] = [],
+): DeterministicAnswer {
   const q = question.trim();
-  const codes = findCodes(q);
+
+  // Follow-ups usually drop the subject: "why?", "and its growth?". When the
+  // question names no airport, inherit the one the conversation was last about.
+  let codes = findCodes(q);
+  let carried: string[] = [];
+  if (codes.length === 0) {
+    for (let i = history.length - 1; i >= 0 && carried.length === 0; i--) {
+      carried = findCodes(history[i].content, 2);
+    }
+    codes = carried;
+  }
+  const inherited = carried.length > 0;
 
   if (/what data|which data|dataset|where.*data.*from|your sources|coverage/i.test(q)) {
     return answerDataset();
@@ -332,13 +359,13 @@ export function answerDeterministically(question: string): DeterministicAnswer {
     if (pair.length >= 2) return answerCompare(q, pair.slice(0, 3));
   }
   if (/why|explain|unmet|reason|drives|driver|breakdown/i.test(q) && codes[0]) {
-    return answerExplain(q, codes[0]);
+    return withCarryNote(answerExplain(q, codes[0]), inherited, codes[0]);
   }
   if (/candidate|rank|best|top|strong|which airports|shortlist|expansion/i.test(q)) {
     return answerRank(q);
   }
-  if (codes.length === 1) return answerProfile(codes[0]);
-  if (codes.length > 1) return answerCompare(q, codes);
+  if (codes.length === 1) return withCarryNote(answerProfile(codes[0]), inherited, codes[0]);
+  if (codes.length > 1) return withCarryNote(answerCompare(q, codes), inherited, codes.join(", "));
 
   const regionList = REGIONS.map((r) => r.label).join(", ");
   return {

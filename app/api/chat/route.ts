@@ -39,7 +39,7 @@ export async function POST(req: NextRequest) {
   // No provider configured, or the caller asked for the control path: answer
   // from rules over the same tools. Always available, never hallucinates.
   if (!choice) {
-    const a = answerDeterministically(question);
+    const a = answerDeterministically(question, messages.slice(0, -1));
     const payload: ChatResponse = {
       text: a.text,
       toolCalls: a.toolCalls,
@@ -72,7 +72,7 @@ export async function POST(req: NextRequest) {
     // A model that answered without calling a tool has, by definition, made the
     // numbers up. Fall back rather than serve it.
     if (toolCalls.length === 0 && /\d/.test(result.text)) {
-      const a = answerDeterministically(question);
+      const a = answerDeterministically(question, messages.slice(0, -1));
       const payload: ChatResponse = {
         text: `${a.text}\n\n*The model answered without consulting the data, so this reply came from the deterministic path instead.*`,
         toolCalls: a.toolCalls,
@@ -95,7 +95,7 @@ export async function POST(req: NextRequest) {
     return NextResponse.json(payload);
   } catch (e) {
     // Provider outage, rate limit, bad key: the demo continues on rules.
-    const a = answerDeterministically(question);
+    const a = answerDeterministically(question, messages.slice(0, -1));
     const payload: ChatResponse = {
       text: `${a.text}\n\n*Model unavailable (${e instanceof Error ? e.message : String(e)}); answered from the deterministic path.*`,
       toolCalls: a.toolCalls,

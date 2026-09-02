@@ -44,9 +44,11 @@ npm run typecheck
 npm run ingest   # download → extract → aggregate → data/airports.json
 ```
 
-That fetches ~3 GB of BTS CSVs into `data/raw/` (gitignored) and takes about
-half an hour, most of it waiting on transtats.bts.gov, which serves at roughly
-50 KB/s per connection. Stages can be run individually:
+That fetches ~3 GB of BTS CSVs into `data/raw/` (gitignored). Nearly all of the
+wall clock is the download — transtats.bts.gov serves at roughly 50 KB/s per
+connection, so the 12 months are pulled over 6 parallel resumable curls. The
+aggregation itself is 35 seconds for 7.08 M flight records. Stages can be run
+individually:
 
 ```bash
 npm run ingest:download   # OurAirports, FAA enplanements, Census
@@ -156,7 +158,7 @@ scripts/ingest/download.ts   OurAirports, FAA enplanements, Census bulk files
 scripts/ingest/ontime.sh     BTS On-Time, 12 months, resumable parallel curl
 scripts/ingest/build.mts     DuckDB aggregation → data/airports.json  (offline)
         │
-data/airports.json           ~380 airports × ~45 measured fields, committed
+data/airports.json           389 airports × ~45 measured fields, committed
         │
 lib/scoring/                 pure, tested, no model — RUS and its components
 lib/tools.ts                 the only path to a number; provenance attached
@@ -166,7 +168,7 @@ lib/tools.ts                 the only path to a number; provenance attached
 app/page.tsx + components/Console.tsx    three panes: ranking, chat, evidence
 ```
 
-DuckDB is used **offline only**, as an ETL engine over 7 million flight records.
+DuckDB is used **offline only**, as an ETL engine over 7,079,061 flight records.
 Nothing at runtime touches a database: the aggregated JSON is small enough to
 load into module scope on the server and to ship to the browser, which is what
 lets the weight sliders re-score instantly.
@@ -179,7 +181,7 @@ All public, all free, no aviation vendor.
 
 | Source | Gives us | Vintage |
 |---|---|---|
-| BTS On-Time Performance | Per-flight delays, taxi-out, cancels, diversions, distance, scheduled times, carrier | CY2024, 12 months |
+| BTS On-Time Performance | Per-flight delays, taxi-out, cancels, diversions, distance, scheduled times, carrier | CY2024, 12 months, 7.08 M records |
 | FAA ACAIS enplanements | Annual boardings, official hub class | CY2023–CY2025 (2025 preliminary) |
 | OurAirports | Runways, coordinates, state, IATA↔FAA identifiers | current |
 | US Census (bulk) | County population and centroids for catchment | 2024 estimates |

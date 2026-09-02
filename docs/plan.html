@@ -140,8 +140,8 @@ footer{border-top:1px solid var(--line); margin-top:40px; padding-top:18px; colo
       <p class="dek">An analyst-facing agent that ranks US airports on how much profitable capacity a terminal or airfield renovation would unlock — deterministic score first, language second.</p>
     </div>
     <div class="stamp">
-      <b>Scope</b> 382 US airports w/ scheduled service<br>
-      <b>Flights</b> CY2024, 12 months · 7.0 M records<br>
+      <b>Scope</b> 389 US airports · 338 scored<br>
+      <b>Flights</b> CY2024, 12 months · 7.08 M records<br>
       <b>Passengers</b> FAA ACAIS CY2023–CY2025<br>
       <b>Stack</b> Next.js 16 · AI SDK v7 · DuckDB (offline)
     </div>
@@ -289,7 +289,7 @@ RUS = 100 × ( 0.30·<b>CPI</b> + 0.25·<b>HCD</b> + 0.20·<b>DMI</b> + 0.15·<b
       <ul style="margin-bottom:0">
         <li>Next.js App Router on Vercel, Node runtime (Fluid Compute).</li>
         <li>AI SDK v6 <span class="mono">streamText</span> + tool calling, models addressed as <span class="mono">"provider/model"</span> through AI Gateway so the provider is swappable.</li>
-        <li>DuckDB is an <strong>offline ETL engine only</strong>, run over 7.0 M flight records. The runtime artifact is a single <span class="mono">data/airports.json</span> of raw measured metrics — small enough to hold in module scope on the server <em>and</em> ship to the browser, which is what makes the weight sliders instant.</li>
+        <li>DuckDB is an <strong>offline ETL engine only</strong>, run over 7.08 M flight records. The runtime artifact is a single <span class="mono">data/airports.json</span> of raw measured metrics — small enough to hold in module scope on the server <em>and</em> ship to the browser, which is what makes the weight sliders instant.</li>
         <li>Voice: browser <span class="mono">SpeechRecognition</span> in, <span class="mono">speechSynthesis</span> out. Bonus-tier, degrades to text silently.</li>
       </ul>
     </div>
@@ -391,8 +391,8 @@ RUS = 100 × ( 0.30·<b>CPI</b> + 0.25·<b>HCD</b> + 0.20·<b>DMI</b> + 0.15·<b
         </tr>
         <tr>
           <td class="k">Runtime DuckDB</td>
-          <td>Nothing needed it. The aggregate over 7.0 M flight records is ~380 rows.</td>
-          <td>DuckDB stayed as the offline ETL engine; the runtime artifact is one JSON file. That removed the database, and let the browser re-score locally when a weight moves.</td>
+          <td>Nothing needed it. The aggregate over 7.08 M flight records is 389 rows.</td>
+          <td>DuckDB stayed as the offline ETL engine; the runtime artifact is one JSON file. That removed the database, and let the browser re-score locally when a weight moves. Projecting only the needed columns into one materialised table — rather than re-parsing the CSVs once per aggregate — took the build from 45 minutes to 35 seconds, with byte-identical output.</td>
         </tr>
       </tbody>
     </table>

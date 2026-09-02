@@ -35,7 +35,7 @@
   "active_agent": null,
   "dirty_tracking": {
     "files_edited_count": 20,
-    "last_edit_timestamp": "2026-09-02T11:38:13.621Z",
+    "last_edit_timestamp": "2026-09-02T11:40:53.578Z",
     "files_edited_this_session": [
       "/Users/asdf/Documents/SHIT/bank-hapoalim/scripts/ingest/ontime.sh",
       "/Users/asdf/Documents/SHIT/bank-hapoalim/lib/scoring/index.ts",
@@ -62,7 +62,7 @@
     "threshold_auto_suggest": 25
   },
   "session_heartbeat": {
-    "last_activity": "2026-09-02T11:38:13.621Z",
+    "last_activity": "2026-09-02T11:40:53.578Z",
     "session_start": "2026-09-02T10:36:57Z",
     "was_cleanly_ended": false
   },

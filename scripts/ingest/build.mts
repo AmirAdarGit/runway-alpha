@@ -45,10 +45,24 @@ console.log(`on-time months: ${months.length} (${months[0]} … ${months.at(-1)}
 await sql("INSTALL excel; LOAD excel;");
 
 /* ---------------------------------------------------------------- flights */
+// Materialise ONCE, projecting only the columns the aggregates need. As a view
+// this was re-parsed for every aggregate — four passes over ~3 GB of CSV, about
+// 45 minutes. Projected into a table it is a single pass and the rest is in RAM.
 // union_by_name because BTS adds and drops trailing columns between years.
+await sql("SET preserve_insertion_order = false");
+console.log("reading CSVs (single pass, projected columns)…");
 await sql(`
-  CREATE VIEW flights AS
-  SELECT * FROM read_csv(
+  CREATE TABLE flights AS
+  SELECT
+    Origin, Dest, FlightDate,
+    Cancelled, Diverted,
+    DepDelayMinutes, DepDel15, TaxiOut,
+    ArrDelayMinutes, TaxiIn,
+    TRY_CAST(CRSDepTime AS INTEGER) AS crs_dep,
+    TRY_CAST(CRSArrTime AS INTEGER) AS crs_arr,
+    Distance, Reporting_Airline,
+    WeatherDelay, NASDelay, CarrierDelay, LateAircraftDelay, SecurityDelay
+  FROM read_csv(
     '${RAW}/ontime_*.csv',
     header = true, union_by_name = true, ignore_errors = true, sample_size = -1
   )
@@ -115,11 +129,11 @@ await sql(`
 await sql(`
   CREATE TABLE peak AS
   WITH mv AS (
-    SELECT Origin AS code, FlightDate AS d, TRY_CAST(CRSDepTime AS INTEGER) // 100 AS hr
-    FROM flights WHERE Cancelled = 0 AND TRY_CAST(CRSDepTime AS INTEGER) IS NOT NULL
+    SELECT Origin AS code, FlightDate AS d, crs_dep // 100 AS hr
+    FROM flights WHERE Cancelled = 0 AND crs_dep IS NOT NULL
     UNION ALL
-    SELECT Dest AS code, FlightDate AS d, TRY_CAST(CRSArrTime AS INTEGER) // 100 AS hr
-    FROM flights WHERE Cancelled = 0 AND TRY_CAST(CRSArrTime AS INTEGER) IS NOT NULL
+    SELECT Dest AS code, FlightDate AS d, crs_arr // 100 AS hr
+    FROM flights WHERE Cancelled = 0 AND crs_arr IS NOT NULL
   ),
   hourly AS (
     SELECT code, d, hr, count(*) AS movements FROM mv GROUP BY code, d, hr
