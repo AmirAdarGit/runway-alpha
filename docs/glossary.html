@@ -1,0 +1,240 @@
+<!DOCTYPE html>
+<html lang="he" dir="rtl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>מילון מונחים — Runway Alpha</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Assistant:wght@300;400;600&family=Frank+Ruhl+Libre:wght@500;700&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --paper:#EDF1F4;
+    --card:#FFFFFF;
+    --ink:#131E2B;
+    --muted:#5A6B7C;
+    --hair:#C6D1DA;
+    --mark:#A6246B;
+  }
+  *{box-sizing:border-box}
+  html{-webkit-text-size-adjust:100%}
+  body{
+    margin:0;background:var(--paper);color:var(--ink);
+    font-family:'Assistant',system-ui,sans-serif;
+    font-size:17px;line-height:1.65;
+  }
+  .wrap{max-width:760px;margin:0 auto;padding:0 20px 96px}
+
+  header.top{padding:60px 0 28px;border-bottom:2px solid var(--ink)}
+  header.top h1{
+    font-family:'Frank Ruhl Libre',serif;font-weight:700;
+    font-size:2.3rem;margin:0 0 10px;letter-spacing:-.01em;
+  }
+  header.top p{margin:0;color:var(--muted);max-width:54ch}
+
+  /* star entry */
+  .star{
+    margin:28px 0 0;padding:22px 24px;
+    background:var(--card);border:1px solid var(--hair);
+    border-right:5px solid var(--mark);
+  }
+  .star .k{
+    font-family:'IBM Plex Mono',monospace;font-weight:500;
+    font-size:1.1rem;direction:ltr;color:var(--mark);
+  }
+  .star .full{font-size:.95rem;color:var(--muted);margin:2px 0 10px}
+  .star p{margin:0;font-size:.99rem;max-width:58ch}
+
+  /* search */
+  .search{position:sticky;top:0;z-index:5;background:var(--paper);padding:18px 0 14px}
+  .search input{
+    width:100%;padding:13px 16px;font-size:1rem;
+    font-family:'Assistant',sans-serif;color:var(--ink);
+    background:var(--card);border:1px solid var(--hair);
+    border-radius:2px;outline:none;
+  }
+  .search input:focus{border-color:var(--ink);box-shadow:0 0 0 3px rgba(19,30,43,.12)}
+  .search input::placeholder{color:var(--muted)}
+  .count{font-size:.85rem;color:var(--muted);margin-top:7px;height:1.2em}
+
+  h2{
+    font-family:'Frank Ruhl Libre',serif;font-weight:700;
+    font-size:1.35rem;margin:44px 0 0;
+    padding-bottom:7px;border-bottom:2px solid var(--ink);
+  }
+  h2 + .grp{margin-top:0}
+
+  .row{
+    display:grid;grid-template-columns:190px 1fr;
+    gap:4px 20px;align-items:baseline;
+    background:var(--card);border:1px solid var(--hair);border-top:none;
+    padding:15px 20px;
+  }
+  .grp .row:first-child{border-top:1px solid var(--hair)}
+  .row .k{
+    font-family:'IBM Plex Mono',monospace;
+    font-size:.9rem;font-weight:500;direction:ltr;
+    word-break:break-word;
+  }
+  .row .k small{
+    display:block;font-family:'Assistant',sans-serif;
+    font-size:.78rem;color:var(--muted);direction:rtl;
+    font-weight:400;margin-top:2px;line-height:1.4;
+  }
+  .row .d{font-size:.97rem;max-width:56ch}
+  .row .d b{font-weight:600}
+  .row.hide{display:none}
+  h2.hide{display:none}
+
+  .empty{
+    display:none;padding:30px 20px;text-align:center;
+    color:var(--muted);background:var(--card);
+    border:1px solid var(--hair);margin-top:20px;
+  }
+  .empty.show{display:block}
+
+  .close{margin-top:52px;padding:24px 26px;background:var(--ink);color:#E8EEF3}
+  .close h3{font-family:'Frank Ruhl Libre',serif;color:#fff;margin:0 0 8px;font-size:1.2rem}
+  .close p{margin:0;color:#B9C8D4;max-width:58ch;font-size:.98rem}
+  .close b{color:#fff;font-weight:600}
+
+  @media(max-width:600px){
+    body{font-size:16px}
+    header.top{padding:40px 0 22px}
+    header.top h1{font-size:1.9rem}
+    .row{grid-template-columns:1fr;gap:6px}
+    .row .k small{display:inline;margin:0 6px 0 0}
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <header class="top">
+    <h1>מילון מונחים</h1>
+    <p>כל הקיצורים והמושגים שחוזרים בפרויקט — מקורות נתונים, מונחי תעופה, רכיבי הניקוד וסטטיסטיקה.</p>
+  </header>
+
+  <div class="star">
+    <div class="k">RUS</div>
+    <div class="full">Renovation Upside Score</div>
+    <p>הציון הסופי של הפרויקט, בסולם 0–100. <b>זה לא מונח תעופתי מקובל</b> — זה שם שהומצא כאן. הוא מודד כמה קיבולת רווחית שיפוץ ישחרר בשדה מסוים, ומורכב מחמישה רכיבים: עומס, גירעון תשתית, צמיחה, ביקוש לא מסופק, ומינוס סיכון.</p>
+  </div>
+
+  <div class="search">
+    <input id="q" type="search" placeholder="חיפוש — למשל taxi, hub, ביקוש" autocomplete="off" aria-label="חיפוש במילון">
+    <div class="count" id="count"></div>
+  </div>
+
+  <h2>גופים ומקורות נתונים</h2>
+  <div class="grp">
+    <div class="row"><div class="k">DOT<small>Department of Transportation</small></div><div class="d">משרד התחבורה האמריקאי.</div></div>
+    <div class="row"><div class="k">BTS<small>Bureau of Transportation Statistics</small></div><div class="d">לשכת הסטטיסטיקה לתחבורה, תחת DOT. <b>מקור הנתונים המרכזי שלך</b> — מחייבת חברות תעופה לדווח ומפרסמת חינם.</div></div>
+    <div class="row"><div class="k">TranStats</div><div class="d">המערכת שדרכה BTS מפרסמת את הקבצים להורדה.</div></div>
+    <div class="row"><div class="k">FAA<small>Federal Aviation Administration</small></div><div class="d">רשות התעופה הפדרלית. מפרסמת סיווגים, תחזיות ונתוני עיכוב בזמן אמת.</div></div>
+    <div class="row"><div class="k">ACAIS<small>Air Carrier Activity Information System</small></div><div class="d">דאטהסט של FAA — נוסעים שנתי לכל שדה וסיווג ה־hub הרשמי.</div></div>
+    <div class="row"><div class="k">TAF<small>Terminal Area Forecast</small></div><div class="d">תחזית FAA לנוסעים ותנועות עד 2050. תחזית של הרגולטור, לא של השוק — קלט אחד ולא אמת.</div></div>
+    <div class="row"><div class="k">NAS<small>National Airspace System</small></div><div class="d">מערכת המרחב האווירי. NAS Status הוא פיד חי של עיכובים ועצירות קרקע.</div></div>
+    <div class="row"><div class="k">ACS<small>American Community Survey</small></div><div class="d">סקר האוכלוסייה של הלשכה לסטטיסטיקה בארה״ב. משמש לחישוב אוכלוסיית האזור סביב השדה.</div></div>
+    <div class="row"><div class="k">OurAirports</div><div class="d">דאטהסט קהילתי פתוח — מסלולים, אורכים, קואורדינטות ומיפוי בין קודים.</div></div>
+    <div class="row"><div class="k">OpenSky</div><div class="d">רשת מעקב טיסות חיה וחינמית. כיסוי דליל בארה״ב — משמשת לצבע בלבד, לא כקלט לציון.</div></div>
+  </div>
+
+  <h2>נתוני תעופה</h2>
+  <div class="grp">
+    <div class="row"><div class="k">On-Time Performance</div><div class="d">דאטהסט BTS ברמת טיסה בודדת: עיכובים, ביטולים, זמני גלגול.</div></div>
+    <div class="row"><div class="k">T-100 Segment</div><div class="d">דאטהסט BTS ברמת זוג ערים חודשי: מושבים, נוסעים, מרחק.</div></div>
+    <div class="row"><div class="k">IATA</div><div class="d">קוד שלוש אותיות — LAX, SFO, ANC. הקוד המסחרי, מה שרואים בכרטיס.</div></div>
+    <div class="row"><div class="k">ICAO</div><div class="d">קוד ארבע אותיות — KLAX, KSFO. הקוד התפעולי, מה ש־FAA משתמשת בו.</div></div>
+    <div class="row"><div class="k">Enplanements<small>אנפליינמנטס</small></div><div class="d">מספר הנוסעים <b>שעלו</b> למטוס בשדה מסוים בשנה. המדד הרשמי לגודל שדה.</div></div>
+    <div class="row"><div class="k">Operations / Movements<small>תנועות</small></div><div class="d">כל המראה או נחיתה נספרת כאחת.</div></div>
+    <div class="row"><div class="k">Segment<small>קטע</small></div><div class="d">קטע טיסה בין שני שדות תעופה.</div></div>
+    <div class="row"><div class="k">Load Factor<small>מקדם תפוסה</small></div><div class="d">נוסעים חלקי מושבים. מעל 83% בערך נחשב ללחוץ.</div></div>
+    <div class="row"><div class="k">Taxi-out</div><div class="d">דקות מעזיבת השער ועד ההמראה בפועל. סמן מצוין לעומס — מודד תור למסלול.</div></div>
+    <div class="row"><div class="k">Diversion<small>הסטה</small></div><div class="d">נחיתה בשדה אחר מהמתוכנן.</div></div>
+    <div class="row"><div class="k">Ground Stop / GDP<small>Ground Delay Program</small></div><div class="d">צעדי FAA לניהול עומס בזמן אמת — עצירת המראות או פריסת עיכובים.</div></div>
+    <div class="row"><div class="k">Hub Class</div><div class="d">סיווג FAA לפי נתח נוסעים: <b>L</b>arge, <b>M</b>edium, <b>S</b>mall, <b>N</b>onhub. קובע את קבוצת ההשוואה בניקוד.</div></div>
+    <div class="row"><div class="k">Great-circle distance</div><div class="d">המרחק הקצר ביותר בין שתי נקודות על פני כדור. כך מחושב אורך הטיסה.</div></div>
+    <div class="row"><div class="k">Long haul<small>טווח ארוך</small></div><div class="d">בפרויקט הזה: מעל 4,000 ק״מ. סף שהוגדר על ידך, לא תקן בינלאומי.</div></div>
+    <div class="row"><div class="k">Catchment<small>אזור היקוות</small></div><div class="d">האוכלוסייה שסביר שתשתמש בשדה. כאן מקורבת כרדיוס 100 ק״מ.</div></div>
+    <div class="row"><div class="k">Spill<small>ביקוש נשפך</small></div><div class="d">נוסעים שרצו לטוס ולא יכלו — אין מקום, אין טיסה, או שהטיסה בוטלה.</div></div>
+    <div class="row"><div class="k">Reporting carriers</div><div class="d">כעשר חברות התעופה הגדולות שמחויבות לדווח ל־BTS. שאר החברות לא מדווחות, וזו מגבלת כיסוי מרכזית.</div></div>
+  </div>
+
+  <h2>רכיבי הניקוד</h2>
+  <div class="grp">
+    <div class="row"><div class="k">RUS<small>Renovation Upside Score</small></div><div class="d">הציון הסופי, 0–100. שם שהומצא בפרויקט הזה.</div></div>
+    <div class="row"><div class="k">CPI<small>Congestion Pressure Index</small></div><div class="d">לחץ עומס — עיכובים, taxi-out, ותנועה בשעת שיא. משקל 0.30.</div></div>
+    <div class="row"><div class="k">HCD<small>Headroom Deficit</small></div><div class="d">גירעון מרווח — תפוקה מול תשתית פיזית. משקל 0.25.</div></div>
+    <div class="row"><div class="k">DMI<small>Demand Momentum Index</small></div><div class="d">מומנטום ביקוש — האם השדה צומח. משקל 0.20.</div></div>
+    <div class="row"><div class="k">UDI<small>Unmet Demand Index</small></div><div class="d">ביקוש לא מסופק. משקל 0.15.</div></div>
+    <div class="row"><div class="k">RSK<small>Risk</small></div><div class="d">סיכון והיתכנות. הרכיב היחיד ש<b>נחסר</b> מהציון, במשקל 0.10.</div></div>
+  </div>
+
+  <h2>סטטיסטיקה ועיבוד</h2>
+  <div class="grp">
+    <div class="row"><div class="k">z-score<small>ציון תקן</small></div><div class="d">כמה סטיות תקן ערך רחוק מהממוצע. מאפשר להשוות דברים ביחידות שונות — דקות מול אחוזים.</div></div>
+    <div class="row"><div class="k">Winsorise<small>קיצוץ קצוות</small></div><div class="d">חיתוך ערכים קיצוניים לאחוזון 5 ו־95, כדי שחריג בודד לא יעוות את כל הנרמול.</div></div>
+    <div class="row"><div class="k">Min–max normalise</div><div class="d">מתיחת טווח ערכים לסולם 0 עד 1.</div></div>
+    <div class="row"><div class="k">Peer normalisation<small>נרמול עמיתים</small></div><div class="d">נרמול בתוך קבוצת השוואה. כאן: בתוך מחלקת ה־hub, כדי ששדה קטן לא יושווה לאטלנטה.</div></div>
+    <div class="row"><div class="k">CAGR<small>Compound Annual Growth Rate</small></div><div class="d">קצב צמיחה שנתי ממוצע לאורך כמה שנים.</div></div>
+    <div class="row"><div class="k">HHI<small>Herfindahl-Hirschman Index</small></div><div class="d">מדד ריכוזיות. ערך גבוה = חברת תעופה אחת שולטת בשדה, וזה סיכון.</div></div>
+    <div class="row"><div class="k">p80<small>אחוזון 80</small></div><div class="d">הערך שמתחתיו נמצאים 80% מהמקרים. עדיף על ממוצע כשיש זנב ארוך של חריגים.</div></div>
+    <div class="row"><div class="k">Confidence band<small>רצועת ביטחון</small></div><div class="d">ה־± שמלווה כל ציון, לפי שלמות הנתונים וגילם. 71±9 ו־71±2 הן המלצות שונות.</div></div>
+  </div>
+
+  <h2>טכנולוגיה</h2>
+  <div class="grp">
+    <div class="row"><div class="k">DuckDB</div><div class="d">מסד נתונים אנליטי בקובץ יחיד. כמו SQLite, אבל בנוי לשאילתות מצטברות על מיליוני שורות.</div></div>
+    <div class="row"><div class="k">DuckDB-WASM</div><div class="d">אותו מסד, רץ בתוך הדפדפן. אין שרת להקים.</div></div>
+    <div class="row"><div class="k">AI SDK v6</div><div class="d">ספריית Vercel לצ׳אט, סטרימינג וקריאת כלים.</div></div>
+    <div class="row"><div class="k">streamText</div><div class="d">הפונקציה שמזרימה את תשובת המודל תוך כדי כתיבה, במקום לחכות לסוף.</div></div>
+    <div class="row"><div class="k">Tool calling</div><div class="d">המודל מחזיר בקשה לקרוא לפונקציה עם פרמטרים, במקום טקסט. <b>זה הלב של הארכיטקטורה כאן</b> — כך המספרים מגיעים מהקוד ולא מהמודל.</div></div>
+    <div class="row"><div class="k">System prompt</div><div class="d">ההוראות הקבועות שנשלחות למודל בכל בקשה, לפני הודעות המשתמש.</div></div>
+    <div class="row"><div class="k">AI Gateway</div><div class="d">שכבת ניתוב של Vercel. מאפשרת להחליף ספק מודל בלי לשנות קוד.</div></div>
+    <div class="row"><div class="k">Provenance<small>מוצא</small></div><div class="d">מטא־דאטה שנוסעת עם כל מספר: מאיזה מקור הגיע ומאיזה תאריך.</div></div>
+    <div class="row"><div class="k">Web Speech API</div><div class="d">API מובנה בדפדפן לדיבור־לטקסט ולטקסט־לדיבור. בסיס לתכונת הקול.</div></div>
+    <div class="row"><div class="k">Fluid Compute</div><div class="d">מצב ריצה ב־Vercel שמתאים לבקשות ארוכות כמו סטרימינג.</div></div>
+  </div>
+
+  <div class="empty" id="empty">לא נמצאו מונחים תואמים.</div>
+
+  <div class="close">
+    <h3>ארבעה שכדאי לזכור בעל פה</h3>
+    <p><b>Enplanements</b> הוא הגודל הרשמי. <b>Hub class</b> הוא קבוצת ההשוואה. <b>Load factor</b> הוא סמן הביקוש. <b>Taxi-out</b> הוא סמן העומס. ארבעת אלה חוזרים בכל שיחה על תעופה, וגם בכל שאלה שמראיין ישאל אותך.</p>
+  </div>
+
+</div>
+
+<script>
+  var q = document.getElementById('q');
+  var count = document.getElementById('count');
+  var empty = document.getElementById('empty');
+  var rows = Array.prototype.slice.call(document.querySelectorAll('.row'));
+  var heads = Array.prototype.slice.call(document.querySelectorAll('h2'));
+
+  q.addEventListener('input', function(){
+    var t = q.value.trim().toLowerCase();
+    var shown = 0;
+
+    rows.forEach(function(r){
+      var hit = !t || r.textContent.toLowerCase().indexOf(t) !== -1;
+      r.classList.toggle('hide', !hit);
+      if (hit) shown++;
+    });
+
+    heads.forEach(function(h){
+      var grp = h.nextElementSibling;
+      var any = Array.prototype.some.call(grp.children, function(r){
+        return !r.classList.contains('hide');
+      });
+      h.classList.toggle('hide', !any);
+      grp.classList.toggle('hide', !any);
+    });
+
+    count.textContent = t ? shown + ' מונחים' : '';
+    empty.classList.toggle('show', t && shown === 0);
+  });
+</script>
+</body>
+</html>

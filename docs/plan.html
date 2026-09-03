@@ -131,20 +131,18 @@ footer{border-top:1px solid var(--line); margin-top:40px; padding-top:18px; colo
 @media (prefers-reduced-motion:no-preference){a{transition:color .15s}}
 :focus-visible{outline:2px solid var(--accent); outline-offset:2px}
 </style>
-
 <header class="top">
   <div class="top-inner">
     <div>
-      <div class="eyebrow">Design &amp; Build Plan · Take-home</div>
+      <div class="eyebrow">Design notes</div>
       <h1>Runway Alpha</h1>
-      <p class="dek">An analyst-facing agent that ranks US airports on how much profitable capacity a terminal or airfield renovation would unlock — deterministic score first, language second.</p>
+      <p class="dek">An agent that finds US airports where a renovation would pay off — places running out of room while demand is still growing. The ranking is arithmetic. The language model routes questions and explains results; it never produces a number.</p>
     </div>
     <div class="stamp">
-      <b>Scope</b> 389 US airports · 338 scored<br>
-      <b>Flights</b> CY2024, 12 months · 7.08 M records<br>
-      <b>Passengers</b> FAA ACAIS CY2023–CY2025<br>
-      <b>Stack</b> Next.js 16 · AI SDK v7 · Groq gpt-oss-120b<br>
-      <b>Tests</b> 38 · build 35 s
+      <b>389</b> airports · <b>338</b> scored<br>
+      <b>7.08 M</b> flight records, all of 2024<br>
+      <b>38</b> tests · data build 35 s<br>
+      Next.js · Groq gpt-oss-120b
     </div>
   </div>
 </header>
@@ -152,81 +150,96 @@ footer{border-top:1px solid var(--line); margin-top:40px; padding-top:18px; colo
 <div class="wrap">
 
 <section id="thesis">
-  <div class="sec-head"><span class="sec-num">01</span><h2>What the agent actually answers</h2></div>
-  <p class="lead">The investment question is not "which airport is busy" — it is <strong>where is demand pressing against a physical constraint that concrete can relieve</strong>. Busy-and-roomy is a bad deal. Constrained-and-shrinking is a worse one. The target is constrained, growing, and structurally under-built.</p>
-  <p>So the core output is a single deterministic index, the <strong>Renovation Upside Score (RUS, 0–100)</strong>, decomposed into five named components an analyst can argue with. The LLM never produces the number. It picks the tool, sets the filters, and explains the arithmetic it was handed.</p>
-  <div class="grid3" style="margin-top:18px">
-    <div class="panel"><div class="eyebrow">Rank</div><p style="margin:6px 0 0;font-size:15px;color:var(--ink-2)">Peer-normalised RUS across any region, hub class, or state filter.</p></div>
-    <div class="panel"><div class="eyebrow">Compare</div><p style="margin:6px 0 0;font-size:15px;color:var(--ink-2)">Head-to-head on all five components plus raw operational inputs.</p></div>
-    <div class="panel"><div class="eyebrow">Diagnose</div><p style="margin:6px 0 0;font-size:15px;color:var(--ink-2)">Why a score is what it is: which input drove it, and how sure we are.</p></div>
-  </div>
-</section>
-
-<section id="data">
-  <div class="sec-head"><span class="sec-num">02</span><h2>Data sources</h2></div>
-  <p>All public, all free, no paid aviation vendor. Everything is pulled once at build time into a local DuckDB file so queries are sub-100 ms and reproducible; only two feeds are live at request time.</p>
-  <div class="tablewrap">
-    <table>
-      <thead><tr><th>Source</th><th>Gives us</th><th>Access</th><th>Refresh</th><th>Known catch</th></tr></thead>
-      <tbody>
-        <tr><td class="k">BTS TranStats<br><span class="mono">Marketing Carrier On-Time</span></td><td>Per-flight ops, dep/arr delay minutes, taxi-out, cancels, diversions, tail &amp; equipment</td><td><span class="tag free">free CSV</span></td><td><span class="tag batch">monthly</span></td><td>~2–3 month publication lag; ~10 reporting carriers only</td></tr>
-        <tr><td class="k">BTS T-100 Segment<br><span class="mono">not available</span></td><td><s>Seats, load factor</s> — every bulk endpoint now returns 404 and the form download is gone</td><td><span class="tag batch">dropped</span></td><td>—</td><td>Load is proxied instead by passengers per departure, and labelled a proxy in every answer</td></tr>
-        <tr><td class="k">FAA ACAIS enplanements</td><td>Annual passengers, official hub class (L / M / S / N)</td><td><span class="tag free">free XLSX</span></td><td><span class="tag batch">annual</span></td><td>Calendar-year only — no intra-year trend</td></tr>
-        <tr><td class="k">FAA Terminal Area Forecast<br><span class="mono">not used</span></td><td><s>Forecast enplanements to 2050</s></td><td><span class="tag batch">dropped</span></td><td>—</td><td>Cut deliberately: FAA's own forecast is not a market view, and two years of measured enplanements carry the momentum component honestly</td></tr>
-        <tr><td class="k">OurAirports</td><td>Runway count, length, surface, lat/lon, elevation, IATA↔ICAO map</td><td><span class="tag free">free CSV</span></td><td><span class="tag batch">on build</span></td><td>Community-edited; runway data occasionally stale</td></tr>
-        <tr><td class="k">FAA NAS Status</td><td>Live ground stops, ground delay programs, cause (weather / volume / equipment)</td><td><span class="tag free">free JSON</span></td><td><span class="tag key">live</span></td><td>Snapshot only — no history, so we log it ourselves</td></tr>
-        <tr><td class="k">OpenSky Network</td><td>Live arrivals/departures per airport for a spot-check of current movement rate</td><td><span class="tag key">free acct</span></td><td><span class="tag key">live</span></td><td>Hard rate limits; US coverage thinner than EU — used as colour, never as a score input</td></tr>
-        <tr><td class="k">US Census bulk files</td><td>County population estimates + county centroids → catchment within 100 km</td><td><span class="tag free">free CSV</span></td><td><span class="tag batch">annual</span></td><td>The ACS JSON API now demands a registered key; the bulk files do not, which keeps the whole ingest credential-free. Radius ≠ drive time</td></tr>
-      </tbody>
-    </table>
-  </div>
-  <p class="note" style="margin-top:16px">Gate/terminal square footage has no free national dataset. We proxy built capacity with <span class="mono">runway-adjusted movement capacity</span> and flag every terminal-side claim as inferred, not measured. This is the single biggest known weakness and it is stated in the agent's own answers.</p>
+  <div class="sec-head"><span class="sec-num">01</span><h2>The idea in one paragraph</h2></div>
+  <p class="lead">The question is not which airport is busiest. It is <strong>where demand is pushing against a physical limit that building something would relieve</strong>. An airport that is busy but has room to spare is a poor investment. One that is cramped but losing passengers is worse. The target is cramped, growing, and structurally under-built.</p>
+  <p>That idea is written down as a score, in code, so it can be argued with. An analyst who disagrees with the weighting can move a slider and watch all 389 airports re-rank instantly.</p>
 </section>
 
 <section id="scoring">
-  <div class="sec-head"><span class="sec-num">03</span><h2>Scoring methodology</h2></div>
-  <p>Five components, each computed in TypeScript from DuckDB aggregates, each winsorised at the 5th/95th percentile then min–max normalised <em>within the airport's hub class</em> so a small airport is scored against small airports, not against ATL.</p>
+  <div class="sec-head"><span class="sec-num">02</span><h2>Scoring methodology</h2></div>
+  <p>Every airport gets a score from 0 to 100. Five parts, added up, one of them subtracted.</p>
 
   <div class="formula">
-Score = 100 × ( 0.30·<b>Delays</b> + 0.25·<b>Room</b> + 0.20·<b>Growth</b> + 0.15·<b>Unserved</b> − 0.10·<b>Risk</b> )   <span class="c">clamped [0,100]</span>
+Score = 100 × ( 0.30·<b>Delays</b> + 0.25·<b>Room</b> + 0.20·<b>Growth</b> + 0.15·<b>Unserved</b> − 0.10·<b>Risk</b> )
 
-<span class="c">Delays and congestion  = n(avg departure delay) · .35 + n(taxi time on a slow day) · .30 + n(busiest-hour flights ÷ runways) · .35</span>
-<span class="c">Running out of room    = n(annual flights ÷ (runways × 200k)) · .5 + n(passengers ÷ runways) · .5</span>
-<span class="c">Passenger growth       = n(growth per year, 2023→25) · .6 + n(growth 2024→25) · .4</span>
-<span class="c">Demand it cannot serve = n(passengers per flight) · .4 + n(cancelled + diverted) · .3 + n(people nearby per passenger) · .3</span>
-<span class="c">Risk                   = n(reliance on one airline) · .5 + n(delay from weather or airspace) · .5   ← subtracted</span>
-
-<span class="c">n(x) = winsorise at the 5th/95th percentile of the airport's FAA hub class, then min–max scale to 0–1</span>
+<span class="c">Delays and congestion  = avg departure delay ·.35 + taxi time on a slow day ·.30 + busiest-hour flights per runway ·.35</span>
+<span class="c">Running out of room    = flights ÷ (runways × 200k) ·.5 + passengers per runway ·.5</span>
+<span class="c">Passenger growth       = growth per year 2023→25 ·.6 + growth 2024→25 ·.4</span>
+<span class="c">Demand it cannot serve = passengers per flight ·.4 + cancelled or diverted ·.3 + people nearby per passenger ·.3</span>
+<span class="c">Risk                   = reliance on one airline ·.5 + delay from weather ·.5      ← subtracted</span>
   </div>
 
   <div class="tablewrap" style="margin-top:22px">
     <table>
-      <thead><tr><th>Component</th><th>Weight</th><th>Investment logic</th></tr></thead>
+      <thead><tr><th>Part</th><th>Weight</th><th>Why it is in the score</th></tr></thead>
       <tbody>
-        <tr><td class="k">Congestion Pressure</td><td style="width:150px"><span class="wt">0.30</span><span class="bar"><i style="width:100%"></i></span></td><td>Delay and taxi-out are the observable price of a constraint. Highest weight because it is the best-measured signal we have.</td></tr>
-        <tr><td class="k">Headroom Deficit</td><td><span class="wt">0.25</span><span class="bar"><i style="width:83%"></i></span></td><td>Throughput per unit of physical plant. High deficit = the airport is doing a lot with too little, which is exactly what a build fixes.</td></tr>
-        <tr><td class="k">Demand Momentum</td><td><span class="wt">0.20</span><span class="bar"><i style="width:67%"></i></span></td><td>Renovation pays back over 20+ years. A congested but flat airport is a trap.</td></tr>
-        <tr><td class="k">Unmet Demand</td><td><span class="wt">0.15</span><span class="bar"><i style="width:50%"></i></span></td><td>Spilled passengers: full aircraft, cancelled flights, a catchment flying less than its population implies.</td></tr>
-        <tr><td class="k">Risk</td><td><span class="wt">−0.10</span><span class="bar"><i style="width:33%;background:var(--crit)"></i></span></td><td>Single-carrier dependence and weather-driven delay both mean new concrete may not convert into new throughput.</td></tr>
+        <tr><td class="k">Delays and congestion</td><td style="width:150px"><span class="wt">0.30</span><span class="bar"><i style="width:100%"></i></span></td><td>Delay is what a shortage of capacity actually costs, and it is the best-measured thing available. Highest weight for that reason.</td></tr>
+        <tr><td class="k">Running out of room</td><td><span class="wt">0.25</span><span class="bar"><i style="width:83%"></i></span></td><td>How much traffic the airport pushes through the runways it has. Doing a lot with too little is exactly what building fixes.</td></tr>
+        <tr><td class="k">Passenger growth</td><td><span class="wt">0.20</span><span class="bar"><i style="width:67%"></i></span></td><td>A terminal pays back over decades. A crowded airport that is shrinking is a trap.</td></tr>
+        <tr><td class="k">Demand it cannot serve</td><td><span class="wt">0.15</span><span class="bar"><i style="width:50%"></i></span></td><td>Full planes, cancelled flights, and a large local population flying less than it should.</td></tr>
+        <tr><td class="k">Risk</td><td><span class="wt">−0.10</span><span class="bar"><i style="width:33%;background:var(--crit)"></i></span></td><td>Leaning on one airline, or losing hours to weather, both mean new concrete may never convert into more flights.</td></tr>
       </tbody>
     </table>
   </div>
 
-  <h3>Rules that keep the number honest</h3>
+  <h3>Five rules that keep the number honest</h3>
   <ul>
-    <li><strong>Peer normalisation.</strong> z-scores computed inside FAA hub class, so rankings compare like with like unless the analyst explicitly asks across classes.</li>
-    <li><strong>Coverage gate.</strong> Any airport missing more than one component input gets a score of <span class="mono">null</span>, not a guessed one, and is listed separately as "insufficient data".</li>
-    <li><strong>Confidence band.</strong> Every score ships with ± derived from input completeness and data age. A 71 ± 9 and a 71 ± 2 are different recommendations.</li>
-    <li><strong>Weights are input, not code.</strong> The sliders re-score every airport in the browser, using the same module the API uses — no round trip, no model.</li>
-    <li><strong>Nearest-rank winsorising.</strong> Interpolated percentiles drag the 95th of a small peer group most of the way to its largest member, which is the exact outlier the winsorising exists to fence off. The bounds pick an observed value instead. A unit test pins this: adding an airport with a 100,000-minute delay must not move a normal airport's congestion score by more than 0.15.</li>
-    <li><strong>Sample floor.</strong> Delay statistics are dropped below 500 departures in the window. A 90-minute average over 40 flights is a real number and statistically empty.</li>
-    <li><strong>Screening floor.</strong> Airports under 100,000 annual enplanements (or 5,000 annualised departures) are scored but held out of the default ranking, so a field with 45 flights a year cannot top a shortlist.</li>
+    <li><strong>Compare like with like.</strong> Each figure is scaled against airports in the same FAA size class, so a small airport is ranked against small airports. Scores from different size classes are not comparable, and the app says so every time it shows them together.</li>
+    <li><strong>Ignore the extremes.</strong> Before scaling, values are capped at the 5th and 95th percentile of that size class, using an actual observed value rather than an interpolated one. Without this, one freak airport flattens the scale for everyone else. A test pins it: adding an airport with a 100,000-minute delay must not move a normal airport's congestion score by more than 0.15.</li>
+    <li><strong>Refuse to guess.</strong> An airport missing more than one of the five parts gets no score and a stated reason, not an estimate. A missing input inside a part is dropped and the rest re-weighted, which lowers confidence instead of quietly scoring zero.</li>
+    <li><strong>Distrust thin samples.</strong> Delay figures are discarded below 500 flights a year. A 90-minute average over 40 flights is a real number and statistically meaningless.</li>
+    <li><strong>Publish the uncertainty.</strong> Every score carries a ± derived from how complete its inputs are and how large its sample is. 71 ± 9 and 71 ± 2 are different recommendations.</li>
   </ul>
 </section>
 
+<section id="ai">
+  <div class="sec-head"><span class="sec-num">03</span><h2>Where AI is used, and where it is not</h2></div>
+  <p class="lead">The model sits at the edges. It reads the question on the way in and writes the answer on the way out. It never touches arithmetic and never sees raw data.</p>
+
+  <div class="grid2">
+    <div class="panel">
+      <h3 style="margin-top:0">The model does</h3>
+      <ul style="margin-bottom:0">
+        <li>Turn "New England" into a six-state filter, and "LA and Santa Ana" into two airports in the order asked.</li>
+        <li>Choose which of the seven tools answers the question, and with what arguments.</li>
+        <li>Write the prose, and carry the subject across follow-up questions.</li>
+      </ul>
+    </div>
+    <div class="panel">
+      <h3 style="margin-top:0">The model does not</h3>
+      <ul style="margin-bottom:0">
+        <li>Calculate any score, weight, ranking or percentage.</li>
+        <li>Decide which airport wins a comparison when the measures disagree.</li>
+        <li>See a single row of source data. It only ever sees tool output.</li>
+      </ul>
+    </div>
+  </div>
+
+  <h3>Three mechanisms that enforce this, rather than trusting it</h3>
+  <ul>
+    <li><strong>The tools are the only route to a number.</strong> Each returns its figures together with where they came from and what they do not cover. The same functions are exposed as plain URLs, so any answer can be checked with no model involved at all: <span class="mono">/api/rank?region=new_england</span>.</li>
+    <li><strong>Every answer is checked afterwards.</strong> Each figure in the reply is pulled out and looked for in the tool output. Anything unaccounted for is flagged on screen next to the answer, not buried in a log.</li>
+    <li><strong>An answer with no tool call is thrown away.</strong> If the model produces figures without consulting the data, the server discards the reply and serves the rules-based answer instead, saying that it did.</li>
+  </ul>
+
+  <p class="note">There is also a button marked <strong>Run without the model</strong>. It answers the same question using rules over the same tools, with no language model anywhere. It is the offline fallback, and it is the control case: if the two disagree, the model is wrong.</p>
+</section>
+
 <section id="arch">
-  <div class="sec-head"><span class="sec-num">04</span><h2>Architecture</h2></div>
-  <p>The LLM sits at the edges — parsing intent on the way in, narrating on the way out. It never touches arithmetic and never sees raw CSV.</p>
+  <div class="sec-head"><span class="sec-num">04</span><h2>How it is built</h2></div>
+  <p>Public data is pulled once, offline, and boiled down to one small file. Nothing at runtime touches a database.</p>
+  <div class="tablewrap" style="margin-bottom:22px">
+    <table>
+      <thead><tr><th>Source</th><th>What it gives</th><th>Catch</th></tr></thead>
+      <tbody>
+        <tr><td class="k">BTS On-Time Performance</td><td>Every US domestic flight in 2024 — delays, taxi time, cancellations, distance, airline</td><td>Major airlines only; no international, no cargo</td></tr>
+        <tr><td class="k">FAA passenger counts</td><td>Passengers per airport 2023–25, and the official size class</td><td>2025 figures are preliminary</td></tr>
+        <tr><td class="k">OurAirports</td><td>Runways, coordinates, airport codes</td><td>Community-maintained, occasionally stale</td></tr>
+        <tr><td class="k">US Census</td><td>Population near each airport</td><td>A 100 km circle, not a real drive time</td></tr>
+        <tr><td class="k">FAA NAS Status</td><td>Ground stops happening right now</td><td>A snapshot, no history</td></tr>
+      </tbody>
+    </table>
+  </div>
 
   <svg viewBox="0 0 940 320" role="img" aria-label="Architecture: batch ETL feeds DuckDB; chat UI calls an agent that calls deterministic scoring tools.">
     <defs>
@@ -284,129 +297,49 @@ Score = 100 × ( 0.30·<b>Delays</b> + 0.25·<b>Room</b> + 0.20·<b>Growth</b> +
     </g>
   </svg>
 
-  <div class="grid2" style="margin-top:22px">
-    <div class="panel">
-      <h3 style="margin-top:0">Runtime</h3>
-      <ul style="margin-bottom:0">
-        <li>Next.js App Router on Vercel, Node runtime (Fluid Compute).</li>
-        <li>AI SDK v6 <span class="mono">streamText</span> + tool calling, models addressed as <span class="mono">"provider/model"</span> through AI Gateway so the provider is swappable.</li>
-        <li>DuckDB is an <strong>offline ETL engine only</strong>, run over 7.08 M flight records. The runtime artifact is a single <span class="mono">data/airports.json</span> of raw measured metrics — small enough to hold in module scope on the server <em>and</em> ship to the browser, which is what makes the weight sliders instant.</li>
-        <li>Voice: browser <span class="mono">SpeechRecognition</span> in, <span class="mono">speechSynthesis</span> out. Bonus-tier, degrades to text silently.</li>
-      </ul>
-    </div>
-    <div class="panel">
-      <h3 style="margin-top:0">Where AI is used — and where it is not</h3>
-      <ul style="margin-bottom:0">
-        <li><strong>Is:</strong> mapping "New England" → the 6-state filter; resolving "LA and Santa Ana" → LAX/BUR/LGB and SNA; choosing which tool answers; writing the prose; carrying context across follow-ups.</li>
-        <li><strong>Is not:</strong> any component value, any weight, any ranking order, any percentage. Those come from tested pure functions and are injected into the answer as structured JSON.</li>
-        <li><strong>Three mechanisms enforce that line rather than trusting it.</strong> Every figure in a reply is extracted and looked for in the tool payloads, and anything unaccounted for is badged next to the answer in the UI. A model that returns figures without calling a tool is rejected outright and the deterministic answer served instead. And a "Run without the model" control answers the same question by rules over the same tools — if the two disagree, the model is wrong.</li>
-      </ul>
-    </div>
-  </div>
-</section>
-
-<section id="walk">
-  <div class="sec-head"><span class="sec-num">05</span><h2>The four questions, walked through</h2></div>
-
-  <div class="qa">
-    <div class="q">Which airports in New England are strong candidates for terminal expansion?</div>
-    <div class="a"><span class="chain">rankAirports({ states:[ME,NH,VT,MA,RI,CT], limit:5, minEnplanements:100000 })</span>Returns RUS-ranked list with per-component breakdown. Answer names the top 3, gives each one's dominant driver (e.g. "BDL scores on headroom deficit, not delay"), and states that terminal-specific square footage is inferred, so the ranking is about movement capacity pressure rather than gate count.</div>
-  </div>
-
-  <div class="qa">
-    <div class="q">Compare LA and Santa Ana airport congestion levels.</div>
-    <div class="a"><span class="chain">compareAirports({ codes:[LAX, SNA], focus:"congestion" })</span>Ambiguity handled explicitly: "LA" resolves to LAX by default, with BUR/LGB/ONT offered as a follow-up. Output is the congestion figures — avg departure delay, p80 taxi-out, peak-hour ops vs runway capacity — plus the live NAS Status line for each if a delay program is active right now.</div>
-  </div>
-
-  <div class="qa">
-    <div class="q">What is the percentage of long-haul flights out of Anchorage?</div>
-    <div class="a"><span class="chain">haulMix({ code:"ANC", basis:"departures", period:"CY2024" })</span>Great-circle distance per T-100 segment, bucketed short &lt;1,500 km / medium 1,500–4,000 / long &gt;4,000. Two numbers reported separately, because for ANC they diverge sharply: share of <em>departures</em> vs share of <em>seats</em>. Cargo-only segments excluded and that exclusion is stated — ANC is a top-five global freight hub and including it would triple the answer.</div>
-  </div>
-
-  <div class="qa">
-    <div class="q">What is the unmet flight demand at SFO and why?</div>
-    <div class="a"><span class="chain">explainScore({ code:"SFO", component:"unmet" })</span>Breaks the "demand it cannot serve" score into its three inputs with the raw values, then attributes: load factor above the peer median, cancellation rate concentrated in specific months, catchment population vs enplanements. Closes with the honest limit — this is <em>revealed</em> spill, not a demand model; true unmet demand needs fare and search data we do not have.</div>
-  </div>
+  <p style="margin-top:20px">DuckDB is used <strong>only offline</strong>, to crunch 7.08 million flight records down to 389 rows in 35 seconds. What ships is a single 480 KB JSON file. It is small enough to hold in memory on the server <em>and</em> send to the browser, which is what lets the weight sliders re-rank every airport with no round trip and no model.</p>
 </section>
 
 <section id="tradeoffs">
-  <div class="sec-head"><span class="sec-num">06</span><h2>Key tradeoffs and what we're not claiming</h2></div>
+  <div class="sec-head"><span class="sec-num">05</span><h2>Key tradeoffs</h2></div>
   <div class="grid2">
-    <div class="flag"><span class="dot a"></span><div><strong>Batch over live.</strong> Reproducibility and speed beat freshness for an investment screen. Cost: the dataset is a quarter stale, and the agent says so in every answer that leans on BTS.</div></div>
-    <div class="flag"><span class="dot a"></span><div><strong>No terminal square footage exists publicly.</strong> "Terminal expansion" is therefore scored as movement-capacity pressure. A real diligence process would buy this data; we flag it rather than fake it.</div></div>
-    <div class="flag"><span class="dot b"></span><div><strong>Weights are a thesis, not a fact.</strong> 0.30/0.25/0.20/0.15/−0.10 encodes a view that observable delay is the strongest constraint signal. The sliders make a disagreeing analyst one drag away from their own ranking.</div></div>
-    <div class="flag"><span class="dot b"></span><div><strong>Peer-class normalisation hides cross-class comparison.</strong> A small airport's 88 and a large hub's 88 mean different absolute opportunity sizes. Raw components are always shown alongside so the analyst can re-rank.</div></div>
-    <div class="flag"><span class="dot c"></span><div><strong>No construction cost, land, or political feasibility.</strong> RUS measures upside, not cost or buildability. It ranks candidates for a human to underwrite — it does not price the deal.</div></div>
-    <div class="flag"><span class="dot c"></span><div><strong>Reporting-carrier bias.</strong> BTS On-Time covers only the largest carriers, so regional-heavy airports have thinner delay data. Captured in the confidence band and the sample floor, not smoothed over.</div></div>
-    <div class="flag"><span class="dot a"></span><div><strong>No seats, so no true load factor.</strong> BTS killed the T-100 bulk download mid-build. Load is proxied by passengers per departure — annual enplanements over annualised departures — which conflates load factor with aircraft gauge. Labelled a proxy everywhere it appears.</div></div>
+    <div class="flag"><span class="dot a"></span><div><strong>Nobody publishes terminal floor space.</strong> There is no free national dataset for it. So "terminal expansion" is scored as pressure on flight capacity — inferred, never measured. This is the biggest weakness in the whole thing, and the agent says so whenever a question is about terminals. Real diligence would buy this data.</div></div>
+    <div class="flag"><span class="dot a"></span><div><strong>Historical data, not live.</strong> A full year of finished flights beats a fresher partial one for an investment screen, and it makes every answer reproducible. The cost is that the figures are a quarter old, which the agent states.</div></div>
+    <div class="flag"><span class="dot b"></span><div><strong>The weights are an opinion, not a fact.</strong> 30/25/20/15/−10 says delay is the strongest evidence of a real constraint. Someone could reasonably weight growth higher. The sliders make that a five-second experiment rather than a code change.</div></div>
+    <div class="flag"><span class="dot b"></span><div><strong>Comparing like with like hides absolute size.</strong> A small airport scoring 70 and a large one scoring 70 do not represent the same amount of money. The raw figures are always shown next to the score so an analyst can judge that themselves.</div></div>
+    <div class="flag"><span class="dot c"></span><div><strong>No costs, no land, no politics.</strong> The score measures upside only. It produces a shortlist for a human to underwrite; it does not price a deal or say whether anything can actually be built.</div></div>
+    <div class="flag"><span class="dot c"></span><div><strong>Small airports have thinner data.</strong> Only the larger airlines report delay data, so regional airports are measured on less. That shows up as a wider uncertainty band, rather than being smoothed over.</div></div>
   </div>
 </section>
 
-<section id="build">
-  <div class="sec-head"><span class="sec-num">07</span><h2>Build order</h2></div>
-  <p>Sequenced so a working end-to-end slice exists after phase 4 — if time runs out, everything after that degrades gracefully.</p>
-  <ol class="phases">
-    <li><span class="hrs">0.0–1.0</span><div><div class="ph-t">Ingest</div><div class="ph-d">Pull the five batch sources, normalise IATA codes, load DuckDB. Ship the <span class="mono">.duckdb</span> file to the repo so the build is offline-reproducible.</div></div></li>
-    <li><span class="hrs">1.0–2.5</span><div><div class="ph-t">Scoring core</div><div class="ph-d">Pure functions for the five components + winsorise/normalise. Unit tests with known fixtures, including the null-coverage path. This is the deliverable that must be right.</div></div></li>
-    <li><span class="hrs">2.5–3.5</span><div><div class="ph-t">Tools layer</div><div class="ph-d">Five typed tools over the scoring core, each returning value + provenance + confidence. Callable and testable without any LLM.</div></div></li>
-    <li><span class="hrs">3.5–5.0</span><div><div class="ph-t">Agent + chat</div><div class="ph-d">System prompt, tool wiring, streaming UI, multi-turn context. Verify all four sample questions end to end.</div></div></li>
-    <li><span class="hrs">5.0–6.0</span><div><div class="ph-t">Transparency UI</div><div class="ph-d">Component breakdown panel, weight sliders, confidence badges, source-and-vintage line under every answer.</div></div></li>
-    <li><span class="hrs">6.0–6.5</span><div><div class="ph-t">Voice</div><div class="ph-d">Web Speech in/out behind a feature flag. Bonus — cut first if anything above slips.</div></div></li>
-    <li><span class="hrs">6.5–8.0</span><div><div class="ph-t">Docs + deploy</div><div class="ph-d">Architecture doc, README with run instructions, Vercel deploy, README-linked worked examples of the four questions.</div></div></li>
-  </ol>
-</section>
-
-<section id="assume">
-  <div class="sec-head"><span class="sec-num">08</span><h2>Assumptions stated up front</h2></div>
-  <ul>
-    <li>US commercial airports with scheduled passenger service only; no general-aviation, military, or territorial fields beyond PR/VI.</li>
-    <li>"Congestion" means departure delay, taxi-out time, and peak-hour movement rate — not TSA queue time or gate-hold, which are unpublished.</li>
-    <li>Runway practical capacity is approximated at 200,000 annual operations per runway, before adjusting for configuration and geometry. Crude; parallel-runway airports are consequently over-penalised and this is noted per airport.</li>
-    <li>Catchment is a 100 km radius sum of county population — a stand-in for drive-time isochrones.</li>
-    <li>Long haul is &gt;4,000 km great-circle. The threshold is a parameter, and the agent will restate it whenever it reports a haul-mix figure.</li>
-    <li>Passenger and operations data are historical. Nothing here forecasts demand except FAA's own TAF, used at 0.4 of one component.</li>
-  </ul>
-</section>
-
 <section id="reality">
-  <div class="sec-head"><span class="sec-num">09</span><h2>What changed once we hit the data</h2></div>
-  <p class="lead">Four things in this plan did not survive contact with the sources. Each is recorded here rather than quietly edited out, because the substitutions are what an analyst needs to know to trust the numbers.</p>
+  <div class="sec-head"><span class="sec-num">06</span><h2>What changed once the data arrived</h2></div>
+  <p>Three sources in the original plan did not survive contact. Recorded here rather than quietly edited out, because the substitutions affect how much the numbers can be trusted.</p>
   <div class="tablewrap">
     <table>
-      <thead><tr><th>Planned</th><th>What happened</th><th>What we did instead</th></tr></thead>
+      <thead><tr><th>Planned</th><th>What happened</th><th>Done instead</th></tr></thead>
       <tbody>
         <tr>
-          <td class="k">BTS T-100 for seats<br>and load factor</td>
-          <td>Every bulk endpoint 404s and the form download is gone. No free replacement carries seats at airport-pair level.</td>
-          <td>Load is proxied by <span class="mono">enplanements ÷ annualised departures</span>. It conflates load factor with aircraft gauge, so it is labelled a proxy in the payload and in every answer that uses it.</td>
+          <td class="k">BTS T-100<br>for seats and load factor</td>
+          <td>Every download endpoint now returns 404. No free source carries seat counts per route.</td>
+          <td>Load is approximated by passengers per flight. That mixes up how full planes are with how big they are, so it is labelled an approximation everywhere it appears.</td>
         </tr>
         <tr>
-          <td class="k">Census ACS API<br>for catchment</td>
-          <td>The JSON API now redirects to a "missing key" page; it wants a registered credential.</td>
-          <td>The Census bulk county-population and gazetteer-centroid files, which need no credential. The whole ingest still runs with zero keys.</td>
+          <td class="k">Census API<br>for local population</td>
+          <td>It now requires a registered key.</td>
+          <td>Census bulk files, which do not. The whole data pipeline still runs with no credentials of any kind.</td>
         </tr>
         <tr>
-          <td class="k">FAA Terminal Area<br>Forecast in momentum</td>
-          <td>Reachable, but it is the FAA forecasting itself — a planning document, not a market view.</td>
-          <td>Cut. Momentum now rests on two measured enplanement deltas (2023→25 CAGR, 2024→25 growth). Less forward-looking, entirely observed.</td>
-        </tr>
-        <tr>
-          <td class="k">Runtime DuckDB</td>
-          <td>Nothing needed it. The aggregate over 7.08 M flight records is 389 rows.</td>
-          <td>DuckDB stayed as the offline ETL engine; the runtime artifact is one JSON file. That removed the database, and let the browser re-score locally when a weight moves. Projecting only the needed columns into one materialised table — rather than re-parsing the CSVs once per aggregate — took the build from 45 minutes to 35 seconds, with byte-identical output.</td>
+          <td class="k">FAA forecasts<br>in the growth score</td>
+          <td>Reachable, but it is the FAA forecasting its own future — a planning document, not a market view.</td>
+          <td>Dropped. Growth now rests on two measured passenger changes. Less forward-looking, entirely observed.</td>
         </tr>
       </tbody>
     </table>
   </div>
-
-  <h3>And three things the build added</h3>
-  <ul>
-    <li><strong>A deterministic answerer.</strong> Rules read the question, call the same tools, and write the answer from a template. It is the demo's safety net with no key and no network — and the control case: if the model disagrees with it, the model is wrong.</li>
-    <li><strong>A number check on every reply.</strong> Figures in the answer are matched against the tool payloads; unaccounted ones are badged in the UI. A reply with figures but no tool call is rejected before it reaches the user.</li>
-    <li><strong>An identifier fix worth naming.</strong> FAA keys its enplanement file on the FAA location identifier, not IATA — Mesa Gateway is AZA to travellers and IWA to the FAA. Two airports silently lost their passenger data until the join matched on either.</li>
-  </ul>
+  <p class="note" style="margin-top:16px">One bug worth naming: the FAA files airports under its own identifier, not the code on your boarding pass. Mesa Gateway is AZA to travellers and IWA to the FAA. Two airports silently lost all their passenger data until the join matched on either.</p>
 </section>
 
-<footer>Runway Alpha — plan of record. Every figure the agent reports carries its source, its vintage, and its confidence; where the data cannot answer, the agent says so instead of estimating.</footer>
+<footer>Every figure the agent reports carries its source and its uncertainty. Where the data cannot answer, it says so instead of estimating.</footer>
 
 </div>
