@@ -1,0 +1,362 @@
+<!DOCTYPE html>
+<html lang="he" dir="rtl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>איך מחושב הציון — RUS</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Assistant:wght@300;400;600&family=Frank+Ruhl+Libre:wght@500;700&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --paper:#EDF1F4;
+    --card:#FFFFFF;
+    --ink:#131E2B;
+    --muted:#5A6B7C;
+    --hair:#C6D1DA;
+    --mark:#A6246B;
+    --up:#1E6F5C;
+  }
+  *{box-sizing:border-box}
+  html{-webkit-text-size-adjust:100%}
+  body{
+    margin:0;
+    background:var(--paper);
+    color:var(--ink);
+    font-family:'Assistant',system-ui,sans-serif;
+    font-size:17px;
+    line-height:1.7;
+    font-weight:400;
+  }
+  .wrap{max-width:720px;margin:0 auto;padding:0 20px 96px}
+
+  /* ---------- hero ---------- */
+  .hero{padding:72px 0 40px;border-bottom:2px solid var(--ink)}
+  .hero h1{
+    font-family:'Frank Ruhl Libre',serif;
+    font-weight:700;
+    font-size:2.6rem;
+    line-height:1.25;
+    margin:0 0 18px;
+    letter-spacing:-.01em;
+  }
+  .hero p{margin:0;max-width:52ch;color:var(--muted)}
+  .verdict{
+    display:flex;align-items:baseline;gap:14px;
+    margin:34px 0 0;padding:20px 24px;
+    background:var(--card);
+    border:1px solid var(--hair);
+    border-right:5px solid var(--mark);
+  }
+  .verdict .num{
+    font-family:'IBM Plex Mono',monospace;
+    font-size:3.1rem;font-weight:500;line-height:1;
+    color:var(--mark);direction:ltr;
+  }
+  .verdict .txt{font-size:.98rem;line-height:1.55}
+  .verdict .txt b{font-weight:600}
+  .verdict .txt span{display:block;color:var(--muted)}
+
+  /* ---------- sections ---------- */
+  h2{
+    font-family:'Frank Ruhl Libre',serif;
+    font-weight:700;font-size:1.55rem;
+    margin:64px 0 6px;
+  }
+  .lede{margin:0 0 26px;color:var(--muted);max-width:56ch}
+
+  .formula{
+    font-family:'IBM Plex Mono',monospace;
+    direction:ltr;text-align:left;
+    background:var(--ink);color:#E8EEF3;
+    padding:16px 18px;font-size:.86rem;
+    line-height:1.9;overflow-x:auto;
+    border-radius:2px;
+  }
+  .formula em{color:#8FB8D6;font-style:normal}
+
+  /* ---------- component blocks ---------- */
+  .comp{margin:44px 0 0}
+  .comp > header{
+    display:flex;align-items:baseline;justify-content:space-between;
+    gap:16px;padding-bottom:8px;border-bottom:2px solid var(--ink);
+  }
+  .comp h3{
+    font-family:'Frank Ruhl Libre',serif;
+    font-weight:500;font-size:1.28rem;margin:0;
+  }
+  .comp .w{
+    font-family:'IBM Plex Mono',monospace;
+    font-size:.9rem;color:var(--muted);direction:ltr;white-space:nowrap;
+  }
+  .comp .gist{margin:10px 0 0;color:var(--muted);font-size:.97rem}
+
+  .input{
+    background:var(--card);
+    border:1px solid var(--hair);
+    border-top:none;
+    padding:18px 20px;
+  }
+  .input:first-of-type{border-top:1px solid var(--hair);margin-top:14px}
+  .input .top{
+    display:flex;flex-wrap:wrap;align-items:baseline;
+    gap:8px 14px;margin-bottom:8px;
+  }
+  .field{
+    font-family:'IBM Plex Mono',monospace;
+    font-size:.88rem;direction:ltr;font-weight:500;
+  }
+  .val{
+    font-family:'IBM Plex Mono',monospace;
+    font-size:.88rem;direction:ltr;
+    background:var(--paper);padding:1px 7px;
+    border:1px solid var(--hair);
+  }
+  .dir{font-size:.82rem;margin-inline-start:auto;white-space:nowrap}
+  .dir.hurt{color:var(--mark)}
+  .dir.help{color:var(--up)}
+  .input p{margin:0;font-size:.98rem;max-width:60ch}
+  .input p + p{margin-top:8px}
+  .flag{
+    margin-top:10px;padding-top:10px;
+    border-top:1px dashed var(--hair);
+    font-size:.92rem;color:var(--mark);
+  }
+
+  /* ---------- plain list ---------- */
+  .plain{background:var(--card);border:1px solid var(--hair);padding:20px 24px;margin-top:20px}
+  .plain h4{font-family:'Assistant';font-weight:600;font-size:1rem;margin:0 0 4px}
+  .plain h4 + p{margin:0 0 18px;color:var(--muted);font-size:.95rem}
+  .plain p:last-child{margin-bottom:0}
+  code{
+    font-family:'IBM Plex Mono',monospace;
+    font-size:.85em;direction:ltr;display:inline-block;
+  }
+
+  .close{
+    margin-top:56px;padding:26px 28px;
+    background:var(--ink);color:#E8EEF3;
+  }
+  .close h2{color:#fff;margin:0 0 10px;font-size:1.3rem}
+  .close p{margin:0;max-width:58ch;color:#B9C8D4}
+  .close b{color:#fff;font-weight:600}
+
+  @media(max-width:560px){
+    body{font-size:16px}
+    .hero{padding:48px 0 32px}
+    .hero h1{font-size:2rem}
+    .verdict{flex-direction:column;gap:8px}
+    .verdict .num{font-size:2.6rem}
+    .dir{margin-inline-start:0;width:100%}
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <section class="hero">
+    <h1>שדה התעופה הגדול בארה״ב<br>מקבל ציון בינוני</h1>
+    <p>אטלנטה מזיזה יותר נוסעים מכל שדה אחר בעולם. במדד שלנו היא יושבת באמצע הטבלה. הדף הזה מסביר למה — דרך שנים־עשר המספרים שמרכיבים את הציון.</p>
+
+    <div class="verdict">
+      <div class="num">43</div>
+      <div class="txt">
+        <b>ATL · ציון RUS מתוך 100</b>
+        <span>עמוס, אבל עדיין מרווח — ומתכווץ</span>
+      </div>
+    </div>
+  </section>
+
+  <h2>מה הציון מנסה למדוד</h2>
+  <p class="lede">לא ״מי הכי עמוס״, אלא <b>איפה בנייה תשנה משהו</b>. שדה עמוס עם מקום פנוי לא צריך בטון. שדה חנוק שמתכווץ הוא מלכודת. המטרה: חנוק, צומח, ובנוי בחסר.</p>
+
+  <div class="formula">
+RUS = 100 × ( <em>0.30</em>·CPI + <em>0.25</em>·HCD + <em>0.20</em>·DMI + <em>0.15</em>·UDI − <em>0.10</em>·RSK )
+  </div>
+
+  <h2>שנים־עשר הקלטים</h2>
+  <p class="lede">ברשומה של כל שדה יש 45 שדות. רק אלה נוגעים בציון. כל אחד מסומן לפי הכיוון שלו: האם ערך גבוה מושך את הציון למעלה או למטה.</p>
+
+  <!-- 1 -->
+  <div class="comp">
+    <header>
+      <h3>עיכובים ועומס</h3>
+      <div class="w">משקל 0.30</div>
+    </header>
+    <p class="gist">כמה כואב במציאות היום. זה הרכיב הכבד ביותר, כי זה האות שנמדד הכי טוב.</p>
+
+    <div class="input">
+      <div class="top">
+        <span class="field">avg_dep_delay_min</span>
+        <span class="val">13.7 min</span>
+        <span class="dir help">גבוה ← ציון גבוה</span>
+      </div>
+      <p>כמה דקות בממוצע מטוס יוצא באיחור מהשער. המדד הישיר ביותר לכך שהשדה לא עומד בעומס.</p>
+    </div>
+
+    <div class="input">
+      <div class="top">
+        <span class="field">p80_taxi_out_min</span>
+        <span class="val">20 min</span>
+        <span class="dir help">גבוה ← ציון גבוה</span>
+      </div>
+      <p>כמה זמן המטוס מתגלגל מהשער עד ההמראה. לא ממוצע אלא האחוזון ה־80 — כלומר ״ביום עמוס״.</p>
+      <p>זה סמן טוב יותר מעיכוב רגיל, כי הוא מודד תור למסלול ולא מזג אוויר ביעד.</p>
+    </div>
+
+    <div class="input">
+      <div class="top">
+        <span class="field">peak_hour_movements ÷ runways</span>
+        <span class="val">149 ÷ 5 = 29.8</span>
+        <span class="dir help">גבוה ← ציון גבוה</span>
+      </div>
+      <p>כמה המראות ונחיתות כל מסלול בודד בולע בשעה הכי עמוסה. 29.8 זה בערך טיסה כל שתי דקות למסלול.</p>
+    </div>
+  </div>
+
+  <!-- 2 -->
+  <div class="comp">
+    <header>
+      <h3>נגמר המקום</h3>
+      <div class="w">משקל 0.25</div>
+    </header>
+    <p class="gist">כמה התשתית הפיזית קטנה מדי ביחס למה שמזרימים דרכה.</p>
+
+    <div class="input">
+      <div class="top">
+        <span class="field">runway_utilisation</span>
+        <span class="val">0.677</span>
+        <span class="dir help">גבוה ← ציון גבוה</span>
+      </div>
+      <p>איזה אחוז מהקיבולת התיאורטית של המסלולים מנוצל בפועל. אטלנטה על 68%.</p>
+      <p class="flag">כאן ATL מפסידה. יש לה עוד כשליש קיבולת פנויה. אילו הייתה על 95%, זה היה אומר ״אין לאן לגדול בלי לבנות״.</p>
+    </div>
+
+    <div class="input">
+      <div class="top">
+        <span class="field">enp_2024 ÷ runways</span>
+        <span class="val">10,502,280</span>
+        <span class="dir help">גבוה ← ציון גבוה</span>
+      </div>
+      <p>כמה נוסעים כל מסלול בודד משרת בשנה. אותה שאלה מזווית הנוסע במקום מזווית המטוס.</p>
+    </div>
+  </div>
+
+  <!-- 3 -->
+  <div class="comp">
+    <header>
+      <h3>צמיחת נוסעים</h3>
+      <div class="w">משקל 0.20</div>
+    </header>
+    <p class="gist">שיפוץ מחזיר את עצמו על פני עשרים שנה ויותר. בלי צמיחה, אין למי לבנות.</p>
+
+    <div class="input">
+      <div class="top">
+        <span class="field">enp_cagr_2yr</span>
+        <span class="val">+0.50%/yr</span>
+        <span class="dir help">גבוה ← ציון גבוה</span>
+      </div>
+      <p>קצב הצמיחה השנתי הממוצע בשנתיים האחרונות. חצי אחוז זה כמעט קיפאון.</p>
+    </div>
+
+    <div class="input">
+      <div class="top">
+        <span class="field">enp_growth_last_yr</span>
+        <span class="val">−2.00%</span>
+        <span class="dir help">גבוה ← ציון גבוה</span>
+      </div>
+      <p>השינוי בשנה האחרונה בלבד, כדי לתפוס מפנה שהממוצע הדו־שנתי מחליק.</p>
+      <p class="flag">כאן ATL מפסידה שוב. המספר שלילי — השדה מתכווץ, לא גדל.</p>
+    </div>
+  </div>
+
+  <!-- 4 -->
+  <div class="comp">
+    <header>
+      <h3>ביקוש שאי אפשר לשרת</h3>
+      <div class="w">משקל 0.15</div>
+    </header>
+    <p class="gist">נוסעים שרצו לטוס ולא הצליחו. אין דרך למדוד את זה ישירות, אז מודדים שלושה עקבות שהם משאירים.</p>
+
+    <div class="input">
+      <div class="top">
+        <span class="field">pax_per_departure</span>
+        <span class="val">155.1</span>
+        <span class="dir help">גבוה ← ציון גבוה</span>
+      </div>
+      <p>כמה נוסעים בממוצע על כל טיסה יוצאת. אם המטוסים מלאים, אנשים לא מצליחים לקנות מקום.</p>
+    </div>
+
+    <div class="input">
+      <div class="top">
+        <span class="field">cancel_rate + divert_rate</span>
+        <span class="val">1.24%</span>
+        <span class="dir help">גבוה ← ציון גבוה</span>
+      </div>
+      <p>אחוז הטיסות שבוטלו או הוסטו לשדה אחר. כל ביטול הוא נוסע שרצה לטוס ולא טס.</p>
+    </div>
+
+    <div class="input">
+      <div class="top">
+        <span class="field">catchment_pop ÷ enp_2024</span>
+        <span class="val">0.132</span>
+        <span class="dir help">גבוה ← ציון גבוה</span>
+      </div>
+      <p>כמה תושבים באזור על כל נוסע שעבר בשדה. ערך גבוה אומר שיש אוכלוסייה שלא טסה — אולי כי אין לה מאיפה.</p>
+    </div>
+  </div>
+
+  <!-- 5 -->
+  <div class="comp">
+    <header>
+      <h3>סיכון</h3>
+      <div class="w">משקל 0.10 · נחסר</div>
+    </header>
+    <p class="gist">למה הבטון עלול לא להשתלם גם אם כל השאר נראה טוב. הרכיב היחיד שיורד מהציון.</p>
+
+    <div class="input">
+      <div class="top">
+        <span class="field">carrier_hhi</span>
+        <span class="val">0.464</span>
+        <span class="dir hurt">גבוה ← ציון נמוך</span>
+      </div>
+      <p>מדד ריכוזיות חברות התעופה. באטלנטה דלתא מחזיקה כשני שלישים מהתנועה.</p>
+      <p>הסיכון: אם חברה אחת מחליטה לצמצם את ה־hub, ההשקעה עומדת ריקה. אתה תלוי בהחלטה של גוף בודד.</p>
+    </div>
+
+    <div class="input">
+      <div class="top">
+        <span class="field">weather_nas_delay_share</span>
+        <span class="val">24.5%</span>
+        <span class="dir hurt">גבוה ← ציון נמוך</span>
+      </div>
+      <p>איזה אחוז מהעיכובים נגרם ממזג אוויר. רבע מהצרות של אטלנטה הן סופות — ומסלול חדש לא פותר סופה.</p>
+      <p class="flag">כלומר חלק מהעומס שמדדנו ברכיב הראשון פשוט לא ניתן לפתרון בבנייה.</p>
+    </div>
+  </div>
+
+  <h2>מה לא נכנס לציון</h2>
+  <p class="lede">שאר 33 השדות ברשומה עושים דברים אחרים.</p>
+
+  <div class="plain">
+    <h4>שדות ששולטים בהתנהגות</h4>
+    <p><code>hub</code> קובע את קבוצת ההשוואה — ATL מנוקדת רק מול שדות גדולים אחרים. <code>departures</code> עושה שני דברים: מתחת ל־500 המראות קלטי העיכוב נזרקים כרועשים מדי, והוא מזין את רצועת הביטחון (מוגבל ב־5,000, אז ATL במקסימום). <code>screened</code> קובע אם השדה מופיע בדירוג ברירת המחדל. <code>state</code>, <code>city</code> ו־<code>code</code> הם איך ״ניו אינגלנד״ נפתר לשורה הזאת.</p>
+
+    <h4>רק לשאלת תמהיל הטווחים</h4>
+    <p>חלוקת הטיסות לקצר, בינוני וארוך, ואורך הקטע הממוצע והמקסימלי. באטלנטה ה־long haul הוא 0.15% — כמעט אפס, כי מדובר בטיסות פנים. המקסימום של 7,245 ק״מ הוא חריג פנימי: אטלנטה–הונולולו.</p>
+
+    <h4>מוצג בפרופיל אבל לא מנוקד</h4>
+    <p>שם, קואורדינטות, אורך המסלול הארוך, נתוני נוסעים משנים אחרות, אחוז הטיסות שאיחרו מעל רבע שעה, החברה הדומיננטית והנתח שלה, ומספר החברות הפעילות.</p>
+
+    <h4>נשמר לעתיד</h4>
+    <p>עוד תשעה שדות נשמרים כי הם זולים לאחסון. שניים מהם הם המועמדים המתבקשים אם תרצה להוסיף עומס בצד הנחיתות: <code>avg_arr_delay_min</code> ו־<code>max_hour_movements</code>.</p>
+  </div>
+
+  <div class="close">
+    <h2>הסיפור בשורה אחת</h2>
+    <p>אטלנטה עמוסה באמת — יש שם עיכובים ותורים. אבל נשארו לה <b>32% קיבולת פנויה</b>, היא <b>מתכווצת</b>, ורבע מהעיכובים שלה הם מזג אוויר שבטון לא מתקן. שלושת אלה גוררים אותה ל־43. אילו המדד היה מציב אותה בראש, הוא היה מודד גודל במקום למדוד הזדמנות.</p>
+  </div>
+
+</div>
+</body>
+</html>

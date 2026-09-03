@@ -45,3 +45,8 @@ next-env.d.ts
 
 # Hebrew audio overview: a personal study aid, not a deliverable.
 /docs/*.mp4
+
+# Local agent tooling state, not part of the project.
+/.claude/
+AGENTS.md
+CLAUDE.md
