@@ -30,12 +30,26 @@ export const DEFAULT_WEIGHTS: Weights = {
   risk: 0.1,
 };
 
+/**
+ * Labels are written for an analyst reading them cold, not for the person who
+ * wrote the formula. "Headroom deficit" means nothing on first sight; "running
+ * out of room" means exactly the right thing.
+ */
 export const COMPONENT_LABELS: Record<ComponentKey, string> = {
-  congestion: "Congestion pressure",
-  headroom: "Headroom deficit",
-  momentum: "Demand momentum",
-  unmet: "Unmet demand",
-  risk: "Risk penalty",
+  congestion: "Delays and congestion",
+  headroom: "Running out of room",
+  momentum: "Passenger growth",
+  unmet: "Demand it cannot serve",
+  risk: "Risk",
+};
+
+/** One line saying what a high value means, for tooltips and explanations. */
+export const COMPONENT_MEANING: Record<ComponentKey, string> = {
+  congestion: "Flights are already waiting to leave and taxiing a long time.",
+  headroom: "The airport handles far more traffic than its runways and size suggest it should.",
+  momentum: "Passenger numbers are rising, so new capacity would be used.",
+  unmet: "Full planes, cancelled flights, and a big local population point to demand going unserved.",
+  risk: "Depends heavily on one airline, or loses time to weather. Subtracted from the score.",
 };
 
 export const HUB_LABELS: Record<string, string> = {
@@ -60,6 +74,12 @@ interface InputSpec {
   get: (a: AirportRecord) => number | null;
   /** true when a LOWER raw value means MORE of the component. */
   invert?: boolean;
+  /**
+   * Multiplier applied for display only. Several inputs are stored as
+   * fractions but read as percentages, and "0.161 %" is simply wrong on a
+   * screen. Scaling never touches the normalised value.
+   */
+  displayScale?: number;
 }
 
 const finite = (v: number | null | undefined) =>
@@ -80,15 +100,15 @@ const COMPONENTS: Record<ComponentKey, InputSpec[]> = {
     },
     {
       key: "p80_taxi_out_min",
-      label: "Taxi-out time, 80th percentile",
+      label: "Taxi time on a slow day",
       unit: "min",
       weight: 0.3,
       get: (a) => ifEnoughFlights(a, a.p80_taxi_out_min),
     },
     {
       key: "peak_movements_per_runway",
-      label: "Peak-hour movements per runway",
-      unit: "mv/hr/rwy",
+      label: "Flights per runway in the busiest hour",
+      unit: "flights",
       weight: 0.35,
       get: (a) =>
         a.peak_hour_movements && a.runways
@@ -99,15 +119,16 @@ const COMPONENTS: Record<ComponentKey, InputSpec[]> = {
   headroom: [
     {
       key: "runway_utilisation",
-      label: "Annual movements vs runway capacity",
-      unit: "x capacity",
+      label: "How full the runways are",
+      unit: "% of capacity",
+      displayScale: 100,
       weight: 0.5,
       get: (a) => finite(a.runway_utilisation),
     },
     {
       key: "enp_per_runway",
-      label: "Enplanements per open runway",
-      unit: "pax/rwy",
+      label: "Passengers per runway",
+      unit: "passengers",
       weight: 0.5,
       get: (a) => (a.enp_2024 && a.runways ? finite(a.enp_2024 / a.runways) : null),
     },
@@ -115,15 +136,17 @@ const COMPONENTS: Record<ComponentKey, InputSpec[]> = {
   momentum: [
     {
       key: "enp_cagr_2yr",
-      label: "Enplanement CAGR, 2023 to 2025",
-      unit: "%/yr",
+      label: "Passenger growth per year, 2023 to 2025",
+      unit: "%",
+      displayScale: 100,
       weight: 0.6,
       get: (a) => finite(a.enp_cagr_2yr),
     },
     {
       key: "enp_growth_last_yr",
-      label: "Enplanement growth, 2024 to 2025",
+      label: "Passenger growth, 2024 to 2025",
       unit: "%",
+      displayScale: 100,
       weight: 0.4,
       get: (a) => finite(a.enp_growth_last_yr),
     },
@@ -131,22 +154,23 @@ const COMPONENTS: Record<ComponentKey, InputSpec[]> = {
   unmet: [
     {
       key: "pax_per_departure",
-      label: "Passengers per departure",
+      label: "Passengers per flight",
       unit: "pax",
       weight: 0.4,
       get: (a) => finite(a.pax_per_departure),
     },
     {
       key: "disruption_rate",
-      label: "Cancelled + diverted share",
-      unit: "share",
+      label: "Flights cancelled or diverted",
+      unit: "%",
+      displayScale: 100,
       weight: 0.3,
       get: (a) => ifEnoughFlights(a, (a.cancel_rate ?? 0) + (a.divert_rate ?? 0)),
     },
     {
       key: "pop_per_enplanement",
-      label: "Catchment population per enplanement",
-      unit: "people/pax",
+      label: "People living nearby per passenger",
+      unit: "people",
       weight: 0.3,
       get: (a) =>
         a.catchment_pop && a.enp_2024 ? finite(a.catchment_pop / a.enp_2024) : null,
@@ -155,15 +179,17 @@ const COMPONENTS: Record<ComponentKey, InputSpec[]> = {
   risk: [
     {
       key: "carrier_hhi",
-      label: "Carrier concentration (HHI)",
-      unit: "index",
+      label: "Reliance on a single airline",
+      // Herfindahl index: 1.0 means one airline flies everything.
+      unit: "of 1",
       weight: 0.5,
       get: (a) => finite(a.carrier_hhi),
     },
     {
       key: "weather_nas_delay_share",
-      label: "Delay minutes from weather / airspace",
-      unit: "share",
+      label: "Delay caused by weather or airspace",
+      unit: "% of delay",
+      displayScale: 100,
       weight: 0.5,
       get: (a) => ifEnoughFlights(a, a.weather_nas_delay_share),
     },
@@ -267,14 +293,17 @@ export function scoreAirports(
       const inputs: InputContribution[] = COMPONENTS[ck].map((spec) => {
         const id = `${g}|${ck}|${spec.key}`;
         const raw = spec.get(a);
+        const scale = spec.displayScale ?? 1;
+        const peerMedian = medians.get(id) ?? null;
         return {
           key: spec.key,
           label: spec.label,
-          raw,
+          // Normalisation runs on the unscaled value; only what is shown moves.
+          raw: raw === null ? null : raw * scale,
           normalized: scales.get(id)?.(raw) ?? null,
           weight: spec.weight,
           unit: spec.unit,
-          peerMedian: medians.get(id) ?? null,
+          peerMedian: peerMedian === null ? null : peerMedian * scale,
         };
       });
 

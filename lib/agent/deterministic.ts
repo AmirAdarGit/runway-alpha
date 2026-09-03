@@ -95,6 +95,49 @@ function detectComponent(q: string): ComponentKey | undefined {
   return undefined;
 }
 
+/**
+ * Field names come off the tool payload in camelCase. Turning
+ * "p80TaxiOutMin" into "P80 Taxi Out Min" is not an improvement, so the
+ * ones that appear in comparisons get written out properly.
+ */
+const METRIC_LABELS: Record<string, string> = {
+  hubClass: "Airport size",
+  rus: "Score out of 100",
+  band: "Score uncertainty",
+  avgDepartureDelayMin: "Average departure delay (min)",
+  p80DepartureDelayMin: "Departure delay on a slow day (min)",
+  shareDelayedOver15Pct: "Flights over 15 min late (%)",
+  p80TaxiOutMin: "Taxi time on a slow day (min)",
+  peakHourMovements: "Flights in the busiest hour",
+  peakMovementsPerRunway: "Busiest-hour flights per runway",
+  runways: "Runways",
+  cancelRatePct: "Flights cancelled (%)",
+  divertRatePct: "Flights diverted (%)",
+  longestRunwayFt: "Longest runway (ft)",
+  movementsAnnualised: "Flights per year",
+  runwayUtilisation: "How full the runways are",
+  enplanements2024: "Passengers in 2024",
+  enplanementsPerRunway: "Passengers per runway",
+  enplanements: "Passengers by year",
+  cagr2yrPct: "Passenger growth per year (%)",
+  growthLastYearPct: "Passenger growth last year (%)",
+  paxPerDeparture: "Passengers per flight",
+  catchmentPopulation: "People living within 100 km",
+  populationPerEnplanement: "People nearby per passenger",
+};
+
+function plainMetricLabel(key: string): string {
+  if (METRIC_LABELS[key]) return METRIC_LABELS[key];
+  // Anything left is a score component, already renamed loudly by the tool.
+  return key
+    .replace(/_normalisedWithinOwnHubClassOnly_notComparableHere$/, " (not comparable here)")
+    .replace(/Component$/, " score")
+    .replace(/([A-Z])/g, " $1")
+    .replace(/^./, (c) => c.toUpperCase())
+    .replace(/\s+/g, " ")
+    .trim();
+}
+
 /* -------------------------------------------------------------- answers */
 
 function answerRank(q: string): DeterministicAnswer {
@@ -125,7 +168,7 @@ function answerRank(q: string): DeterministicAnswer {
   const rows = r.results
     .map(
       (a) =>
-        `| ${a.rank} | **${a.code}** | ${a.name?.slice(0, 30)} | ${a.hubClass} | ${fmt(a.rus)} ± ${fmt(a.band)} | ${a.driver} | ${int(a.enplanements2024)} |`,
+        `| ${a.rank} | **${a.code}** | ${a.city ?? a.name?.slice(0, 22)} | ${Math.round(a.rus ?? 0)} | ${a.driver} | ${int(a.enplanements2024)} |`,
     )
     .join("\n");
 
@@ -133,23 +176,20 @@ function answerRank(q: string): DeterministicAnswer {
   const second = r.results[1];
 
   const lead =
-    `**${top.code} leads on Renovation Upside in ${r.scope}, at ${fmt(top.rus)} ± ${fmt(top.band)}**, driven by ${top.driver?.toLowerCase()}.` +
-    (second
-      ? ` ${second.code} follows at ${fmt(second.rus)}, where the driver is ${second.driver?.toLowerCase()}.`
-      : "");
+    `**${top.code} is the strongest candidate in ${r.scope}, scoring ${Math.round(top.rus ?? 0)} out of 100.** ` +
+    `Its main problem is ${top.driver?.toLowerCase()}.` +
+    (second ? ` ${second.code} is next at ${Math.round(second.rus ?? 0)}.` : "");
 
   return {
     text: `${lead}
 
-| # | Code | Airport | Hub | RUS | Dominant driver | Enplanements 2024 |
-|---|------|---------|-----|-----|-----------------|-------------------|
+| # | Airport | City | Score | Main driver | Passengers 2024 |
+|---|---------|------|-------|-------------|-----------------|
 ${rows}
 
-**How this was scoped.** ${r.scopeNotes.join(" ") || `Scope: ${r.scope}.`} ${r.counted} airports were in scope after the screening floor. Scores are normalised ${r.peerNormalisation}, so a nonhub is ranked against nonhubs — scores across different hub classes are not directly comparable.
+${r.scopeNotes.join(" ")} Airports are compared against others of a similar size, so scores are not comparable between a small airport and a large one.
 
-**Terminal-specific caveat.** No free national dataset publishes terminal or gate square footage, so "terminal expansion" is scored here as movement-capacity pressure. That is inferred, not measured.
-
-*${r.provenance}*`,
+No one publishes terminal floor space for US airports, so "terminal expansion" here means pressure on flight capacity, not measured terminal size.`,
     toolCalls: [{ tool: "rankAirports", args, result: r }],
   };
 }
@@ -160,8 +200,16 @@ function answerCompare(q: string, codes: string[]): DeterministicAnswer {
   // Flag a metro whose alternates we did not use, so the user can redirect.
   const metro = findMetros(q).find((m) => m.codes.length > 1) ?? findMetro(q);
 
+  // Drop the score fields the tool already flagged as not comparable here, and
+  // the uncertainty band, which is detail rather than comparison.
   const keys = [
-    ...new Set(r.airports.flatMap((a) => Object.keys(a).filter((k) => k !== "code" && k !== "name"))),
+    ...new Set(
+      r.airports.flatMap((a) =>
+        Object.keys(a).filter(
+          (k) => !["code", "name", "band"].includes(k) && !k.includes("notComparableHere"),
+        ),
+      ),
+    ),
   ];
   const header = `| Metric | ${r.airports.map((a) => `**${a.code}**`).join(" | ")} |`;
   const sep = `|---|${r.airports.map(() => "---").join("|")}|`;
@@ -174,14 +222,13 @@ function answerCompare(q: string, codes: string[]): DeterministicAnswer {
         if (typeof v === "object") return JSON.stringify(v);
         return String(v);
       });
-      const label = k.replace(/([A-Z])/g, " $1").replace(/^./, (c) => c.toUpperCase());
-      return `| ${label} | ${cells.join(" | ")} |`;
+      return `| ${plainMetricLabel(k)} | ${cells.join(" | ")} |`;
     })
     .join("\n");
 
   const ambiguity =
     metro && metro.codes.length > 1
-      ? `\n\n**Ambiguity resolved.** "${metro.label}" covers ${metro.codes.join(", ")}. This answer used ${codes.join(" and ")}; ask again naming another field if you meant a different one.`
+      ? `\n\n${metro.label} has more than one airport: ${metro.codes.join(", ")}. This used ${codes.join(" and ")} — name another if you meant a different one.`
       : "";
 
   // Lead with the verdict computed from raw metrics, not from component values,
@@ -196,15 +243,13 @@ function answerCompare(q: string, codes: string[]): DeterministicAnswer {
     : "";
 
   return {
-    text: `Comparing **${codes.join(" vs ")}** on ${focus}.
+    text: `**${codes.join(" vs ")}** — ${focus}.
 
 ${verdict}${header}
 ${sep}
 ${body}
 
-${r.comparabilityNote}${ambiguity}
-
-*${r.provenance}*`,
+${r.comparabilityNote}${ambiguity}`,
     toolCalls: [{ tool: "compareAirports", args: { codes, focus }, result: r }],
   };
 }
@@ -215,19 +260,17 @@ function answerHaul(code: string): DeterministicAnswer {
     return { text: r.error as string, toolCalls: [{ tool: "haulMix", args: { code }, result: r }] };
   }
   return {
-    text: `**${r.longHaulPct}% of ${r.code}'s domestic departures are long haul** (over ${r.definition.longHaul.replace("over ", "")}), against a national average of ${r.nationalLongHaulPct}%.
+    text: `**${r.longHaulPct}% of flights leaving ${r.code} are long haul** — over 4,000 km. The national figure is ${r.nationalLongHaulPct}%.
 
-| Bucket | Definition | Share of departures |
-|---|---|---|
-| Short | ${r.definition.shortHaul} | ${r.shortHaulPct}% |
-| Medium | ${r.definition.mediumHaul} | ${r.mediumHaulPct}% |
-| Long | ${r.definition.longHaul} | ${r.longHaulPct}% |
+| Distance | Share of flights |
+|---|---|
+| Short (under 1,500 km) | ${r.shortHaulPct}% |
+| Medium (1,500–4,000 km) | ${r.mediumHaulPct}% |
+| Long (over 4,000 km) | ${r.longHaulPct}% |
 
-Average stage length is ${int(r.avgStageLengthKm)} km; the longest domestic stage flown is ${int(r.longestDomesticStageKm)} km. Based on ${int(r.departuresInWindow)} performed departures in the data window.
+The average flight covers ${int(r.avgStageLengthKm)} km. Based on ${int(r.departuresInWindow)} flights in 2024.
 
-**Read this narrowly.** ${r.scopeWarning}
-
-*${r.provenance}*`,
+This counts US domestic flights by the major airlines only. Anchorage's international and cargo traffic is not included, and for this airport that leaves a lot out.`,
     toolCalls: [{ tool: "haulMix", args: { code }, result: r }],
   };
 }
@@ -244,28 +287,24 @@ function answerExplain(q: string, code: string): DeterministicAnswer {
       const inputs = c.inputs
         .map(
           (i) =>
-            `| ${i.label} | ${fmt(i.raw, 3)} ${i.unit} | ${fmt(i.peerMedian, 3)} | ${i.vsPeerMedian} | ${fmt(i.normalized, 2)} |`,
+            `| ${i.label} | ${fmt(i.raw, 1)} ${i.unit} | ${fmt(i.peerMedian, 1)} | ${i.vsPeerMedian} |`,
         )
         .join("\n");
-      return `**${c.component}** — component value ${fmt(c.value, 3)}, weight ${c.weight}, ${fmt(c.pointsContributed)} points ${c.direction}.
+      const sign = (c.pointsContributed ?? 0) >= 0 ? "adds" : "takes off";
+      return `**${c.component}** — ${sign} ${fmt(Math.abs(c.pointsContributed ?? 0))} points.
 
-| Input | Measured | Peer median | vs peers | Normalised |
-|---|---|---|---|---|
+| Measure | ${r.code} | Similar airports | |
+|---|---|---|---|
 ${inputs}`;
     })
     .join("\n\n");
 
   return {
-    text: `**${r.code} scores ${fmt(r.rus)} ± ${fmt(r.band)}** (confidence ${fmt(r.confidence, 2)}), normalised against ${r.peerCount} peers in ${r.peerGroup}.
+    text: `**${r.code} scores ${Math.round(r.rus ?? 0)} out of 100**, compared against ${r.peerCount} airports of a similar size.
 
 ${blocks}
 
-**Method.** ${r.method}
-
-**Limits.**
-${(r.limits ?? []).map((l) => `- ${l}`).join("\n")}
-
-*${r.provenance}*`,
+These figures show what already happened at the airport, not a forecast of demand. Nothing here estimates what a project would cost.`,
     toolCalls: [{ tool: "explainScore", args: { code, component }, result: r }],
   };
 }
@@ -276,9 +315,9 @@ function answerProfile(code: string): DeterministicAnswer {
     return { text: r.error as string, toolCalls: [{ tool: "airportProfile", args: { code }, result: r }] };
   }
   return {
-    text: `**${r.code} — ${r.name}** (${r.city}, ${r.state}), FAA hub class ${r.hubClass}.
+    text: `**${r.code} — ${r.name}** (${r.city}, ${r.state}).
 
-**RUS ${fmt(r.rus)} ± ${fmt(r.band)}**, ranked ${r.positionInHubClass} of ${r.hubClassSize} in its hub class. Dominant driver: ${r.driver}.
+**Scores ${Math.round(r.rus ?? 0)} out of 100**, ranking ${r.positionInHubClass} of ${r.hubClassSize} among airports of a similar size. Its main driver is ${r.driver?.toLowerCase()}.
 
 | | |
 |---|---|

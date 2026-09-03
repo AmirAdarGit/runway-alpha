@@ -110,8 +110,11 @@ test("comparison returns every requested airport and flags cross-class scoring",
     ["LAX", "SNA"],
   );
   assert.equal(r.missing.length, 0);
-  // LAX is a large hub, SNA a medium hub: the payload must say scores differ in basis.
-  assert.match(r.comparabilityNote, /different FAA hub classes/);
+  // LAX is a large hub, SNA a medium hub: the payload must warn that their
+  // scores were measured on different scales, and say so without jargon.
+  assert.match(r.comparabilityNote, /different sizes/);
+  assert.match(r.comparabilityNote, /Compare the raw figures, not the scores/);
+  assert.doesNotMatch(r.comparabilityNote, /hub class|normalis/i);
 });
 
 test("comparison reports unknown codes instead of inventing them", () => {

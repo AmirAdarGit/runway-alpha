@@ -132,26 +132,30 @@ function summarise(s: ScoredAirport) {
  */
 const FOCUS_METRICS: Record<string, { key: string; label: string; higherMeans: string }[]> = {
   congestion: [
-    { key: "avgDepartureDelayMin", label: "average departure delay", higherMeans: "more delay" },
-    { key: "p80TaxiOutMin", label: "taxi-out at the 80th percentile", higherMeans: "longer queues" },
+    { key: "avgDepartureDelayMin", label: "Average departure delay", higherMeans: "more delay" },
+    { key: "p80TaxiOutMin", label: "Taxi time on a slow day", higherMeans: "longer queues" },
     {
       key: "peakMovementsPerRunway",
-      label: "peak-hour movements per runway",
+      label: "Busiest-hour flights per runway",
       higherMeans: "more pressure on each runway",
     },
-    { key: "cancelRatePct", label: "cancellation rate", higherMeans: "less reliable" },
+    { key: "cancelRatePct", label: "Flights cancelled", higherMeans: "less reliable service" },
   ],
   capacity: [
-    { key: "runwayUtilisation", label: "movements vs runway capacity", higherMeans: "less headroom" },
-    { key: "enplanementsPerRunway", label: "enplanements per runway", higherMeans: "less headroom" },
+    { key: "runwayUtilisation", label: "How full the runways are", higherMeans: "less room to grow" },
+    { key: "enplanementsPerRunway", label: "Passengers per runway", higherMeans: "less room to grow" },
   ],
   growth: [
-    { key: "cagr2yrPct", label: "2-year enplanement CAGR", higherMeans: "faster growth" },
-    { key: "growthLastYearPct", label: "growth 2024 to 2025", higherMeans: "faster growth" },
+    { key: "cagr2yrPct", label: "Passenger growth per year", higherMeans: "faster growth" },
+    { key: "growthLastYearPct", label: "Passenger growth last year", higherMeans: "faster growth" },
   ],
   demand: [
-    { key: "paxPerDeparture", label: "passengers per departure", higherMeans: "fuller aircraft" },
-    { key: "populationPerEnplanement", label: "catchment population per enplanement", higherMeans: "a less-served catchment" },
+    { key: "paxPerDeparture", label: "Passengers per flight", higherMeans: "fuller planes" },
+    {
+      key: "populationPerEnplanement",
+      label: "People living nearby per passenger",
+      higherMeans: "more local demand going unserved",
+    },
   ],
 };
 
@@ -159,7 +163,7 @@ function compareOnRawMetrics(rows: Record<string, unknown>[], focus: CompareFocu
   const metrics = FOCUS_METRICS[focus];
   if (!metrics || rows.length < 2) {
     return {
-      note: "No directly comparable raw metric set for this focus; compare the components within a hub class only.",
+      note: "No directly comparable figures for this topic. Compare these airports only if they are the same size.",
       metrics: [],
     };
   }
@@ -181,8 +185,8 @@ function compareOnRawMetrics(rows: Record<string, unknown>[], focus: CompareFocu
       values: Object.fromEntries(measured.map((x) => [x.code, round(x.value, 2)])),
       verdict:
         gapPct === null
-          ? `${top.code} is higher, meaning ${m.higherMeans}`
-          : `${top.code} is ${gapPct}% higher than ${bottom.code}, meaning ${m.higherMeans}`,
+          ? `${m.label}: ${top.code} is higher — ${m.higherMeans}`
+          : `${m.label}: ${top.code} is ${gapPct}% higher than ${bottom.code} — ${m.higherMeans}`,
     };
   });
 
@@ -190,14 +194,24 @@ function compareOnRawMetrics(rows: Record<string, unknown>[], focus: CompareFocu
   const tally = new Map<string, number>();
   for (const v of verdicts) if (v.highest) tally.set(v.highest, (tally.get(v.highest) ?? 0) + 1);
   const ranked = [...tally.entries()].sort((a, b) => b[1] - a[1]);
+  // headline is written to be shown to a reader; guidance is for the model and
+  // is never printed, which keeps instructions out of user-facing text.
+  const split = ranked.length > 1 && ranked[0][1] === ranked[1][1];
   const headline =
     ranked.length === 0
-      ? "Not enough measured metrics to call it."
-      : ranked.length > 1 && ranked[0][1] === ranked[1][1]
-        ? `Split decision: no airport leads on a majority of the ${focus} metrics. Report the metrics individually rather than declaring a winner.`
-        : `${ranked[0][0]} leads on ${ranked[0][1]} of ${verdicts.length} ${focus} metrics.`;
+      ? "There is not enough measured data to call this one."
+      : split
+        ? "It is a split decision — neither airport is worse on most of the measures."
+        : `${ranked[0][0]} is worse on ${ranked[0][1]} of the ${verdicts.length} measures.`;
 
-  return { headline, basis: "raw measured metrics, directly comparable across hub classes", metrics: verdicts };
+  return {
+    headline,
+    guidance: split
+      ? "Report each measure separately. Do not declare a winner."
+      : "Lead with the headline, then give the measures that support it.",
+    basis: "measured figures, which can be compared between airports of any size",
+    metrics: verdicts,
+  };
 }
 
 /** Comparison against the peer median, without silly "below by 0%" phrasing. */
@@ -240,8 +254,8 @@ export function rankAirports(
     scopeNotes: scope.notes,
     weights: { ...DEFAULT_WEIGHTS, ...ctx.weights },
     peerNormalisation: ctx.crossClass
-      ? "all airports pooled into one peer group"
-      : "within FAA hub class",
+      ? "every airport measured against the same national scale"
+      : "each airport measured against others of a similar size",
     counted: inScope.length,
     results: ranked.slice(0, limit).map((s, i) => ({ rank: i + 1, ...summarise(s) })),
     unscored: unscored.map((s) => ({
@@ -436,10 +450,9 @@ export function compareAirports(
     missing,
     rawComparison: compareOnRawMetrics(rows, focus),
     // Comparing across hub classes mixes two different normalisation scales.
-    comparabilityNote:
-      new Set(found.map((s) => s.airport.hub)).size > 1
-        ? "These airports sit in different FAA hub classes, so their RUS values were normalised against different peer groups. The raw metrics below are directly comparable; the scores are not."
-        : "All airports here share one hub class, so scores and raw metrics are both directly comparable.",
+    comparabilityNote: crossClass
+      ? "These airports are different sizes, and each score is measured against airports of its own size. Compare the raw figures, not the scores."
+      : "These airports are the same size class, so both the scores and the raw figures can be compared directly.",
     provenance: provenanceLine(ds),
   };
 }

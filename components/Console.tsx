@@ -5,6 +5,7 @@ import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 import {
   COMPONENT_LABELS,
+  COMPONENT_MEANING,
   DEFAULT_WEIGHTS,
   scoreAirports,
 } from "@/lib/scoring";
@@ -187,7 +188,7 @@ export default function Console({ airports, meta, provenance, modelLabel }: Prop
         {/* ------------------------------------------------ ranking */}
         <section className="pane">
           <div className="pane-head">
-            <h2>Ranking — Renovation Upside Score</h2>
+            <h2>Where a renovation would pay off</h2>
           </div>
 
           <div className="controls">
@@ -224,7 +225,7 @@ export default function Console({ airports, meta, provenance, modelLabel }: Prop
             <div className="weights">
               {(Object.keys(DEFAULT_WEIGHTS) as ComponentKey[]).map((k) => (
                 <div className={`weight ${k === "risk" ? "risk" : ""}`} key={k}>
-                  <span>
+                  <span title={COMPONENT_MEANING[k]}>
                     {COMPONENT_LABELS[k]}
                     {k === "risk" ? " (−)" : ""}
                   </span>
@@ -243,10 +244,7 @@ export default function Console({ airports, meta, provenance, modelLabel }: Prop
                 <button className="btn ghost" onClick={() => setWeights({ ...DEFAULT_WEIGHTS })}>
                   Reset weights
                 </button>
-                <span className="hint">
-                  Sliders re-score all {airports.length} airports in the browser, using the same
-                  module the API uses.
-                </span>
+                <span className="hint">Move a slider to rank on a different priority.</span>
               </div>
             </div>
           </div>
@@ -257,9 +255,11 @@ export default function Console({ airports, meta, provenance, modelLabel }: Prop
                 <tr>
                   <th>#</th>
                   <th>Airport</th>
-                  <th>Hub</th>
-                  <th style={{ textAlign: "right" }}>RUS</th>
-                  <th style={{ textAlign: "right" }}>Enpl. 2024</th>
+                  <th title="FAA size class: large, medium, small, nonhub">Size</th>
+                  <th style={{ textAlign: "right" }} title="0 to 100. Higher means more to gain from a renovation.">
+                    Score
+                  </th>
+                  <th style={{ textAlign: "right" }}>Passengers 2024</th>
                 </tr>
               </thead>
               <tbody>
@@ -322,8 +322,7 @@ export default function Console({ airports, meta, provenance, modelLabel }: Prop
             {turns.length === 0 && (
               <div className="chatlog">
                 <div className="empty">
-                  Ask about a region, compare two airports, or challenge a score. Every figure in an
-                  answer comes from a tool call, and the tool payload is shown on the right.
+                  Ask about a region, compare two airports, or ask why a score is what it is.
                 </div>
               </div>
             )}
@@ -405,7 +404,7 @@ export default function Console({ airports, meta, provenance, modelLabel }: Prop
               >
                 Run without the model
               </button>
-              <span>Answers cite their source and vintage. Numbers are checked against tool output.</span>
+              <span>Every number is checked against the underlying data.</span>
             </div>
           </div>
         </section>
@@ -427,23 +426,29 @@ export default function Console({ airports, meta, provenance, modelLabel }: Prop
                   </div>
                   <div className="bigscore">
                     <b>{fmt(detail.rus)}</b>
-                    <span>
-                      ± {fmt(detail.band)} · confidence {detail.confidence.toFixed(2)} ·{" "}
-                      {detail.peerGroup}, {detail.peerCount} peers
+                    <span title={`Confidence ${detail.confidence.toFixed(2)}`}>
+                      out of 100 · give or take {fmt(detail.band)} · vs {detail.peerCount}{" "}
+                      similar-sized airports
                     </span>
                   </div>
 
                   {detail.components.map((c) => (
                     <div className="comp" key={c.key}>
                       <div className="lbl">
-                        <span>
+                        <span title={COMPONENT_MEANING[c.key]}>
                           {c.label}
                           {c.key === "risk" ? " (subtracted)" : ""}
                         </span>
-                        <code>
-                          {c.value === null ? "no data" : c.value.toFixed(2)} × {c.weight.toFixed(2)} ={" "}
-                          {c.points >= 0 ? "+" : ""}
-                          {c.points.toFixed(1)}
+                        <code
+                          title={
+                            c.value === null
+                              ? "Not enough data to score this"
+                              : `${c.value.toFixed(2)} × weight ${c.weight.toFixed(2)} = ${c.points.toFixed(1)} points`
+                          }
+                        >
+                          {c.value === null
+                            ? "no data"
+                            : `${c.points >= 0 ? "+" : ""}${c.points.toFixed(1)} pts`}
                         </code>
                       </div>
                       <div className={`compbar ${c.key === "risk" ? "neg" : ""}`}>
@@ -458,7 +463,7 @@ export default function Console({ airports, meta, provenance, modelLabel }: Prop
                                 ? "not measured"
                                 : `${formatRaw(inp.raw)} ${inp.unit}`}
                               {inp.peerMedian !== null && inp.raw !== null
-                                ? ` · med ${formatRaw(inp.peerMedian)}`
+                                ? ` · typical ${formatRaw(inp.peerMedian)}`
                                 : ""}
                             </code>
                           </div>
@@ -475,16 +480,14 @@ export default function Console({ airports, meta, provenance, modelLabel }: Prop
                 </>
               ) : (
                 <div className="empty">
-                  Select an airport on the left, or ask a question — the evidence for the answer lands
-                  here.
+                  Pick an airport on the left, or ask a question. The workings show up here.
                 </div>
               )}
 
               {lastAnswer?.toolCalls?.length ? (
                 <>
                   <div className="ev-title" style={{ marginTop: 4 }}>
-                    <b style={{ fontSize: 12 }}>TOOL CALLS</b>
-                    <span>behind the last answer</span>
+                    <b style={{ fontSize: 12 }}>DATA BEHIND THE ANSWER</b>
                   </div>
                   {lastAnswer.toolCalls.map((tc, i) => (
                     <details className="toolcall" key={i}>
@@ -497,12 +500,15 @@ export default function Console({ airports, meta, provenance, modelLabel }: Prop
                 </>
               ) : null}
 
-              <div className="caveats">
-                {meta.caveats.map((c, i) => (
-                  <div key={i}>{c}</div>
-                ))}
-              </div>
-              <div className="provenance">{provenance}</div>
+              <details className="notes">
+                <summary>What this data covers</summary>
+                <div className="caveats">
+                  {meta.caveats.map((c, i) => (
+                    <div key={i}>{c}</div>
+                  ))}
+                </div>
+                <div className="provenance">{provenance}</div>
+              </details>
             </div>
           </div>
         </section>

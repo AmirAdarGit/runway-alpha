@@ -715,3 +715,38 @@ td.num {
     max-height: 78vh;
   }
 }
+
+/* Data notes: worth reading once, not worth seeing on every glance. */
+.notes {
+  border-top: 1px solid var(--line);
+  padding-top: 10px;
+}
+.notes > summary {
+  cursor: pointer;
+  font-family: var(--mono);
+  font-size: 10.5px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--muted);
+  list-style: none;
+}
+.notes > summary::-webkit-details-marker {
+  display: none;
+}
+.notes > summary::before {
+  content: "▸ ";
+}
+.notes[open] > summary::before {
+  content: "▾ ";
+}
+.notes > summary:hover {
+  color: var(--ink-2);
+}
+.notes .caveats {
+  margin-top: 10px;
+}
+.notes .provenance {
+  border-top: none;
+  margin-top: 10px;
+  padding-top: 0;
+}
