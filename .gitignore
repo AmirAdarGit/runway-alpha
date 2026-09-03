@@ -42,3 +42,6 @@ next-env.d.ts
 
 # Ingest working files: ~3 GB of BTS CSVs, re-downloadable with `npm run ingest`.
 /data/raw/
+
+# Hebrew audio overview: a personal study aid, not a deliverable.
+/docs/*.mp4

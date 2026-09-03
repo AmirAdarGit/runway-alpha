@@ -64,13 +64,13 @@
     "threshold_auto_suggest": 25
   },
   "session_heartbeat": {
-    "last_activity": "2026-09-03T10:01:56.095Z",
+    "last_activity": "2026-09-03T10:02:41Z",
     "session_start": "2026-09-02T10:36:57Z",
     "was_cleanly_ended": false
   },
   "last_stop": {
     "source": "unknown",
-    "last_message": "",
-    "timestamp": "2026-09-03T09:58:46Z"
+    "last_message": "(truncated, 1125 chars omitted) ...ntation to the user.\n\nTwo things worth knowing:\n\n- **The \"1 Issue\" badge is not yours.** It's a hydration warning caused by Grammarly and another extension injecting attributes into `<body>`. Invisible in a clean profile — but if you're screen-sharing your normal Chrome, an interviewer will see the badge. Demo in an incognito window to avoid it.\n- **The chat looked frozen earlier** because Fast Refresh was rebuilding while I edited files with the page open. Not a bug; state resets on hot reload.",
+    "timestamp": "2026-09-03T10:02:41Z"
   }
 }

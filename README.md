@@ -42,8 +42,9 @@ one throwaway question first, or use **Run without the model** — the answer is
 instant and the figures are identical.
 
 ```bash
-npm test         # 38 tests: scoring arithmetic, tool integration, number check
+npm test          # 38 tests: scoring arithmetic, tool integration, number check
 npm run typecheck
+npx tsx scripts/ask.mts    # ask the agent from the terminal, no model, no server
 ```
 
 ## Rebuild the data from source
@@ -94,20 +95,20 @@ Every one of these is also a plain URL with no model in the path:
 
 ## Scoring
 
-**Renovation Upside Score (RUS), 0–100.** Computed in `lib/scoring/`, which
+**The score, 0–100.** Computed in `lib/scoring/`, which
 imports nothing from any model SDK.
 
 ```
-RUS = 100 × ( 0.30·CPI + 0.25·HCD + 0.20·DMI + 0.15·UDI − 0.10·RSK )
+Score = 100 × ( 0.30·Delays + 0.25·Room + 0.20·Growth + 0.15·Unserved − 0.10·Risk )
 ```
 
 | Component | Weight | Inputs | Why |
 |---|---|---|---|
-| Congestion pressure | 0.30 | avg departure delay (.35), taxi-out p80 (.30), peak-hour movements per runway (.35) | Delay is the observable price of a constraint, and the best-measured signal available |
-| Headroom deficit | 0.25 | movements vs runway capacity (.5), enplanements per runway (.5) | Throughput per unit of physical plant — doing a lot with too little is what a build fixes |
-| Demand momentum | 0.20 | enplanement CAGR 2023→25 (.6), growth 2024→25 (.4) | A renovation pays back over decades; a congested but flat airport is a trap |
-| Unmet demand | 0.15 | passengers per departure (.4), cancelled + diverted (.3), catchment population per enplanement (.3) | Spill: full aircraft, unreliable service, an under-served catchment |
-| Risk penalty | −0.10 | carrier HHI (.5), weather/airspace share of delay (.5) | Single-carrier dependence and weather mean new concrete may not convert to throughput |
+| Delays and congestion | 0.30 | average departure delay (.35), taxi time on a slow day (.30), busiest-hour flights per runway (.35) | Delay is the observable price of a constraint, and the best-measured signal available |
+| Running out of room | 0.25 | flights vs runway capacity (.5), passengers per runway (.5) | Throughput per unit of physical plant — doing a lot with too little is what a build fixes |
+| Passenger growth | 0.20 | growth per year 2023→25 (.6), growth 2024→25 (.4) | A renovation pays back over decades; a congested but flat airport is a trap |
+| Demand it cannot serve | 0.15 | passengers per flight (.4), cancelled or diverted (.3), people living nearby per passenger (.3) | Full planes, unreliable service, an underserved local population |
+| Risk | −0.10 | reliance on one airline (.5), delay from weather or airspace (.5) | Leaning on one airline, or losing time to weather, means new concrete may not convert into throughput |
 
 **Rules that keep it honest**
 

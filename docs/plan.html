@@ -143,7 +143,8 @@ footer{border-top:1px solid var(--line); margin-top:40px; padding-top:18px; colo
       <b>Scope</b> 389 US airports · 338 scored<br>
       <b>Flights</b> CY2024, 12 months · 7.08 M records<br>
       <b>Passengers</b> FAA ACAIS CY2023–CY2025<br>
-      <b>Stack</b> Next.js 16 · AI SDK v7 · DuckDB (offline)
+      <b>Stack</b> Next.js 16 · AI SDK v7 · Groq gpt-oss-120b<br>
+      <b>Tests</b> 38 · build 35 s
     </div>
   </div>
 </header>
@@ -187,13 +188,13 @@ footer{border-top:1px solid var(--line); margin-top:40px; padding-top:18px; colo
   <p>Five components, each computed in TypeScript from DuckDB aggregates, each winsorised at the 5th/95th percentile then min–max normalised <em>within the airport's hub class</em> so a small airport is scored against small airports, not against ATL.</p>
 
   <div class="formula">
-RUS = 100 × ( 0.30·<b>CPI</b> + 0.25·<b>HCD</b> + 0.20·<b>DMI</b> + 0.15·<b>UDI</b> − 0.10·<b>RSK</b> )   <span class="c">clamped [0,100]</span>
+Score = 100 × ( 0.30·<b>Delays</b> + 0.25·<b>Room</b> + 0.20·<b>Growth</b> + 0.15·<b>Unserved</b> − 0.10·<b>Risk</b> )   <span class="c">clamped [0,100]</span>
 
-<span class="c">CPI  Congestion Pressure   = n(avg dep delay) · .35 + n(taxi-out p80) · .30 + n(peak-hour movements ÷ runways) · .35</span>
-<span class="c">HCD  Headroom Deficit      = n(annual movements ÷ (runways × 200k)) · .5 + n(enplanements ÷ runways) · .5</span>
-<span class="c">DMI  Demand Momentum       = n(enplanement CAGR 2023→25) · .6 + n(growth 2024→25) · .4</span>
-<span class="c">UDI  Unmet Demand          = n(pax per departure) · .4 + n(cancel + divert rate) · .3 + n(catchment pop per enplanement) · .3</span>
-<span class="c">RSK  Risk / feasibility    = n(carrier HHI) · .5 + n(weather + airspace share of delay) · .5   ← subtracted</span>
+<span class="c">Delays and congestion  = n(avg departure delay) · .35 + n(taxi time on a slow day) · .30 + n(busiest-hour flights ÷ runways) · .35</span>
+<span class="c">Running out of room    = n(annual flights ÷ (runways × 200k)) · .5 + n(passengers ÷ runways) · .5</span>
+<span class="c">Passenger growth       = n(growth per year, 2023→25) · .6 + n(growth 2024→25) · .4</span>
+<span class="c">Demand it cannot serve = n(passengers per flight) · .4 + n(cancelled + diverted) · .3 + n(people nearby per passenger) · .3</span>
+<span class="c">Risk                   = n(reliance on one airline) · .5 + n(delay from weather or airspace) · .5   ← subtracted</span>
 
 <span class="c">n(x) = winsorise at the 5th/95th percentile of the airport's FAA hub class, then min–max scale to 0–1</span>
   </div>
@@ -206,7 +207,7 @@ RUS = 100 × ( 0.30·<b>CPI</b> + 0.25·<b>HCD</b> + 0.20·<b>DMI</b> + 0.15·<b
         <tr><td class="k">Headroom Deficit</td><td><span class="wt">0.25</span><span class="bar"><i style="width:83%"></i></span></td><td>Throughput per unit of physical plant. High deficit = the airport is doing a lot with too little, which is exactly what a build fixes.</td></tr>
         <tr><td class="k">Demand Momentum</td><td><span class="wt">0.20</span><span class="bar"><i style="width:67%"></i></span></td><td>Renovation pays back over 20+ years. A congested but flat airport is a trap.</td></tr>
         <tr><td class="k">Unmet Demand</td><td><span class="wt">0.15</span><span class="bar"><i style="width:50%"></i></span></td><td>Spilled passengers: full aircraft, cancelled flights, a catchment flying less than its population implies.</td></tr>
-        <tr><td class="k">Risk penalty</td><td><span class="wt">−0.10</span><span class="bar"><i style="width:33%;background:var(--crit)"></i></span></td><td>Single-carrier dependence and weather-driven delay both mean new concrete may not convert into new throughput.</td></tr>
+        <tr><td class="k">Risk</td><td><span class="wt">−0.10</span><span class="bar"><i style="width:33%;background:var(--crit)"></i></span></td><td>Single-carrier dependence and weather-driven delay both mean new concrete may not convert into new throughput.</td></tr>
       </tbody>
     </table>
   </div>
@@ -314,7 +315,7 @@ RUS = 100 × ( 0.30·<b>CPI</b> + 0.25·<b>HCD</b> + 0.20·<b>DMI</b> + 0.15·<b
 
   <div class="qa">
     <div class="q">Compare LA and Santa Ana airport congestion levels.</div>
-    <div class="a"><span class="chain">compareAirports({ codes:[LAX, SNA], focus:"congestion" })</span>Ambiguity handled explicitly: "LA" resolves to LAX by default, with BUR/LGB/ONT offered as a follow-up. Output is the CPI sub-table — avg departure delay, p80 taxi-out, peak-hour ops vs runway capacity — plus the live NAS Status line for each if a delay program is active right now.</div>
+    <div class="a"><span class="chain">compareAirports({ codes:[LAX, SNA], focus:"congestion" })</span>Ambiguity handled explicitly: "LA" resolves to LAX by default, with BUR/LGB/ONT offered as a follow-up. Output is the congestion figures — avg departure delay, p80 taxi-out, peak-hour ops vs runway capacity — plus the live NAS Status line for each if a delay program is active right now.</div>
   </div>
 
   <div class="qa">
@@ -324,7 +325,7 @@ RUS = 100 × ( 0.30·<b>CPI</b> + 0.25·<b>HCD</b> + 0.20·<b>DMI</b> + 0.15·<b
 
   <div class="qa">
     <div class="q">What is the unmet flight demand at SFO and why?</div>
-    <div class="a"><span class="chain">explainScore({ code:"SFO", component:"UDI" })</span>Decomposes UDI into its three inputs with the raw values, then attributes: load factor above the peer median, cancellation rate concentrated in specific months, catchment population vs enplanements. Closes with the honest limit — this is <em>revealed</em> spill, not a demand model; true unmet demand needs fare and search data we do not have.</div>
+    <div class="a"><span class="chain">explainScore({ code:"SFO", component:"unmet" })</span>Breaks the "demand it cannot serve" score into its three inputs with the raw values, then attributes: load factor above the peer median, cancellation rate concentrated in specific months, catchment population vs enplanements. Closes with the honest limit — this is <em>revealed</em> spill, not a demand model; true unmet demand needs fare and search data we do not have.</div>
   </div>
 </section>
 
