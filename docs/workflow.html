@@ -1,0 +1,175 @@
+<title>How a Question Becomes an Answer</title>
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wght@500;600;700&family=IBM+Plex+Mono:wght@400;500&family=Source+Serif+4:opsz,wght@8..60,400;8..60,600&display=swap">
+<style>
+:root{
+  --ground:#F2F5F8; --surface:#FFFFFF; --surface-2:#E9EEF4;
+  --ink:#111C28; --ink-2:#3B4C5E; --muted:#68798C;
+  --line:#D3DCE6; --line-strong:#AEBCCB;
+  --accent:#B26A10; --accent-soft:#F3E4CE; --accent-ink:#8A4F06;
+  --cool:#1F6474; --cool-soft:#DCEBEE;
+  --crit:#993434;
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    --ground:#0E151C; --surface:#151E27; --surface-2:#1D2932;
+    --ink:#E7EDF3; --ink-2:#B9C6D3; --muted:#8194A6;
+    --line:#28353F; --line-strong:#3C4C59;
+    --accent:#E3A34A; --accent-soft:#3A2C15; --accent-ink:#F0BE78;
+    --cool:#66B7C6; --cool-soft:#152D33;
+    --crit:#D97575;
+  }
+}
+:root[data-theme="dark"]{
+  --ground:#0E151C; --surface:#151E27; --surface-2:#1D2932;
+  --ink:#E7EDF3; --ink-2:#B9C6D3; --muted:#8194A6;
+  --line:#28353F; --line-strong:#3C4C59;
+  --accent:#E3A34A; --accent-soft:#3A2C15; --accent-ink:#F0BE78;
+  --cool:#66B7C6; --cool-soft:#152D33;
+  --crit:#D97575;
+}
+*{box-sizing:border-box}
+body{
+  margin:0; background:var(--ground); color:var(--ink);
+  font-family:"Source Serif 4", Georgia, serif; font-size:16.5px; line-height:1.6;
+  -webkit-font-smoothing:antialiased;
+}
+.wrap{max-width:900px; margin:0 auto; padding:36px 26px 80px}
+h1,h2,.ui{font-family:"Archivo","Helvetica Neue",Arial,sans-serif}
+code,.mono{font-family:"IBM Plex Mono",ui-monospace,Menlo,monospace}
+
+.eyebrow{font-family:"IBM Plex Mono",monospace; font-size:11px; letter-spacing:.14em; text-transform:uppercase; color:var(--accent-ink)}
+h1{font-size:clamp(26px,4vw,36px); line-height:1.1; margin:.35em 0 .3em; letter-spacing:-.018em; font-weight:700; text-wrap:balance}
+.dek{font-size:17px; color:var(--ink-2); max-width:62ch; margin:0 0 6px}
+.q{
+  font-family:"IBM Plex Mono",monospace; font-size:13.5px; color:var(--ink);
+  background:var(--surface); border:1px solid var(--line); border-left:3px solid var(--accent);
+  border-radius:4px; padding:11px 14px; margin:22px 0 30px;
+}
+
+h2{font-size:19px; margin:44px 0 14px; letter-spacing:-.01em; font-weight:600; border-bottom:1px solid var(--line-strong); padding-bottom:7px}
+p{margin:0 0 13px; max-width:68ch}
+
+figure{margin:0 0 10px; background:var(--surface); border:1px solid var(--line); border-radius:5px; padding:20px 14px 12px; overflow-x:auto}
+figcaption{font-size:13.5px; color:var(--muted); margin-top:10px; text-align:center; font-family:"Archivo",sans-serif}
+.mermaid{display:flex; justify-content:center; min-width:520px}
+/* Mermaid inherits the page font otherwise, which is the body serif. The
+   renderer replaces the <pre>, so target the produced SVG rather than .mermaid. */
+figure svg text, figure svg span, figure svg div,
+.mermaid, .mermaid text, .mermaid span, .mermaid div{
+  font-family:"Archivo","Helvetica Neue",Arial,sans-serif !important;
+}
+/* Edge labels sit on the page ground, not on a node fill. */
+.mermaid .edgeLabel{color:#111C28; border-radius:3px; padding:1px 5px}
+
+.legend{display:flex; gap:20px; flex-wrap:wrap; margin:14px 0 0; font-family:"Archivo",sans-serif; font-size:13px; color:var(--ink-2); justify-content:center}
+.legend span{display:flex; align-items:center; gap:7px}
+.sw{width:13px; height:13px; border-radius:3px; border:1.5px solid}
+.sw.code{background:#DCEBEE; border-color:#1F6474}
+.sw.model{background:#F3E4CE; border-color:#B26A10}
+
+.tablewrap{overflow-x:auto; border:1px solid var(--line); border-radius:4px; background:var(--surface)}
+table{border-collapse:collapse; width:100%; font-family:"Archivo",sans-serif; font-size:13.5px}
+th{
+  text-align:left; font-family:"IBM Plex Mono",monospace; font-size:10.5px; letter-spacing:.09em;
+  text-transform:uppercase; color:var(--muted); font-weight:500;
+  padding:10px 13px; border-bottom:1px solid var(--line-strong); white-space:nowrap;
+}
+td{padding:10px 13px; border-bottom:1px solid var(--line); vertical-align:top; color:var(--ink-2)}
+tbody tr:last-child td{border-bottom:none}
+td.k{color:var(--ink); font-weight:600; white-space:nowrap}
+td .mono{font-size:12px; color:var(--cool)}
+.who{
+  display:inline-block; font-family:"IBM Plex Mono",monospace; font-size:10px;
+  padding:2px 6px; border-radius:3px; white-space:nowrap;
+}
+.who.code{background:var(--cool-soft); color:var(--cool)}
+.who.model{background:var(--accent-soft); color:var(--accent-ink)}
+
+ul{margin:0 0 13px; padding-left:19px; max-width:68ch}
+li{margin-bottom:7px}
+strong{font-weight:600}
+.note{border-left:2px solid var(--line-strong); padding:3px 0 3px 15px; color:var(--muted); font-size:15px; max-width:66ch}
+footer{border-top:1px solid var(--line); margin-top:44px; padding-top:16px; color:var(--muted); font-size:13px; font-family:"Archivo",sans-serif}
+</style>
+
+<div class="wrap">
+
+<div class="eyebrow">Runway Alpha · request flow</div>
+<h1>How a question becomes an answer</h1>
+<p class="dek">One question, followed end to end. The point of the picture is the colour: everything that produces a number is code, and everything the model touches is words.</p>
+
+<div class="q">"Which airports in New England are strong candidates for terminal expansion?"</div>
+
+<figure>
+<pre class="mermaid">
+%%{init: {'theme':'base','flowchart':{'htmlLabels':true,'curve':'basis','nodeSpacing':40,'rankSpacing':46},'themeVariables':{
+  'fontFamily':'Archivo, Helvetica, Arial, sans-serif',
+  'fontSize':'14px',
+  'lineColor':'#8496A6',
+  'edgeLabelBackground':'#FFFFFF',
+  'primaryColor':'#DCEBEE','primaryTextColor':'#0E2A32','primaryBorderColor':'#1F6474',
+  'tertiaryColor':'#FFFFFF','tertiaryTextColor':'#111C28','tertiaryBorderColor':'#AEBCCB'
+}}}%%
+flowchart TD
+  Q(["Analyst asks the question"]):::model
+  M["Model picks one tool"]:::model
+  T["rankAirports, region new_england"]:::code
+  R["New England becomes 6 states"]:::code
+  S["Score all 389 airports"]:::code
+  F["Keep the 11 in scope"]:::code
+  P[/"Result: 5 airports, scores, sources"/]:::code
+  W["Model writes the answer"]:::model
+  V{"Every number in the result?"}:::code
+  OK(["Shown: 6 figures verified"]):::code
+  BAD(["Shown: stray number flagged"]):::code
+
+  Q --> M
+  M -->|"tool + arguments"| T
+  T --> R --> S --> F --> P
+  P -->|"numbers only"| W
+  W --> V
+  V -->|"yes"| OK
+  V -->|"no"| BAD
+
+  classDef code fill:#DCEBEE,stroke:#1F6474,stroke-width:1.5px,color:#0E2A32;
+  classDef model fill:#F3E4CE,stroke:#B26A10,stroke-width:1.5px,color:#4A2D05;
+</pre>
+<figcaption>The model appears twice, at the start and near the end. Every number is produced in between, by code it never sees inside.</figcaption>
+</figure>
+
+<div class="legend">
+  <span><i class="sw code"></i> code — produces the numbers</span>
+  <span><i class="sw model"></i> model — reads the question, writes the words</span>
+</div>
+
+<h2>The same steps, with what actually happened</h2>
+
+<div class="tablewrap">
+  <table>
+    <thead><tr><th>Step</th><th>Who</th><th>What happened in this run</th></tr></thead>
+    <tbody>
+      <tr><td class="k">Read the question</td><td><span class="who model">model</span></td><td>Recognised it as a ranking question about a named region.</td></tr>
+      <tr><td class="k">Choose a tool</td><td><span class="who model">model</span></td><td>Called <span class="mono">rankAirports(region: new_england, limit: 5)</span>. It picks the tool and the arguments — nothing else.</td></tr>
+      <tr><td class="k">Resolve the place</td><td><span class="who code">code</span></td><td>"New England" is a lookup in code, not a guess: ME, NH, VT, MA, RI, CT. The answer says which six states it used.</td></tr>
+      <tr><td class="k">Score everything</td><td><span class="who code">code</span></td><td>All 389 airports are scored first, then filtered. Scoring the filtered 11 alone would compare them only against each other and change every number.</td></tr>
+      <tr><td class="k">Apply the scope</td><td><span class="who code">code</span></td><td>389 → 11 airports in those states and above 100,000 passengers a year.</td></tr>
+      <tr><td class="k">Return the result</td><td><span class="who code">code</span></td><td>Top 5 with scores, the driver behind each, the data vintage and the known limits. This is the only place numbers come from.</td></tr>
+      <tr><td class="k">Write the answer</td><td><span class="who model">model</span></td><td>Turned that into prose: Bangor first at 57, running out of room. 1.7 seconds.</td></tr>
+      <tr><td class="k">Check the numbers</td><td><span class="who code">code</span></td><td>Pulled all 6 figures out of the reply and found each one in the result. Badge on screen reads <em>6 figures verified</em>.</td></tr>
+    </tbody>
+  </table>
+</div>
+
+<h2>Three things that can go wrong, and what happens</h2>
+<ul>
+  <li><strong>The model states a number that isn't in the result.</strong> The check catches it and the figure is flagged on screen, next to the answer, where you cannot miss it.</li>
+  <li><strong>The model answers without calling a tool at all.</strong> Then it invented everything. The server throws the reply away and answers from rules instead, and says that it did.</li>
+  <li><strong>The model is slow or unreachable.</strong> The same rules-based path answers instantly. Same tools, same numbers, plainer wording. There is a button for it, and it doubles as the control: if the two ever disagree, the model is wrong.</li>
+</ul>
+
+<p class="note">The rules-based path replaces only the two amber boxes. Everything blue runs exactly as it does above, which is why the numbers come out identical.</p>
+
+<footer>Runway Alpha — the ranking is arithmetic; the language model routes the question and explains the result.</footer>
+
+</div>
