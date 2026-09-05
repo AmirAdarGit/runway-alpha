@@ -51,8 +51,5 @@ next-env.d.ts
 AGENTS.md
 CLAUDE.md
 
-# Interview prep pages: my own notes on what to say and where the gaps are.
-/docs/defence-notes-he*.html
-
-# Hebrew study copy of the workflow explainer, not a deliverable.
-/docs/workflow-he.html
+# Hebrew study copies of the docs, not deliverables.
+/docs/*-he*.html
