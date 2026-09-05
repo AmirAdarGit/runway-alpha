@@ -221,4 +221,10 @@ All public, all free, no aviation vendor.
   measures upside. It ranks candidates for a human to underwrite; it does not
   price the deal.
 
-Design document with the full reasoning: `docs/plan.html`.
+## Design document
+
+**[`docs/DESIGN.md`](docs/DESIGN.md)** — scoring methodology, key tradeoffs, and
+where AI is used. Renders on GitHub.
+
+`docs/plan.html` is the same material as a formatted page, along with
+`docs/glossary.html` and `docs/rus-explainer.html`.
